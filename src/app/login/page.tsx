@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import { signIn, auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,15 @@ export default async function LoginPage({
     const password = String(formData.get("password") ?? "");
     const callbackUrl = String(formData.get("callbackUrl") ?? "/");
 
-    await signIn("credentials", { email, password, redirectTo: callbackUrl });
+    try {
+      await signIn("credentials", { email, password, redirectTo: callbackUrl });
+    } catch (error) {
+      if (error instanceof AuthError) {
+        const qs = new URLSearchParams({ error: "CredentialsSignin", callbackUrl });
+        redirect(`/login?${qs.toString()}`);
+      }
+      throw error;
+    }
   }
 
   return (
