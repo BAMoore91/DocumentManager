@@ -74,6 +74,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
   revalidatePath("/dashboard");
   revalidatePath("/documents");
   revalidatePath("/super-admin");
+  revalidatePath("/super-admin/documents");
 }
 
 export async function deleteDocument(formData: FormData): Promise<void> {
@@ -103,6 +104,7 @@ export async function deleteDocument(formData: FormData): Promise<void> {
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   revalidatePath("/super-admin");
+  revalidatePath("/super-admin/documents");
 }
 
 export async function updateExpiration(formData: FormData): Promise<void> {

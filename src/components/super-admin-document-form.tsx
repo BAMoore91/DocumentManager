@@ -1,0 +1,98 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { uploadDocument } from "@/lib/actions/documents";
+
+type User = { id: string; name: string | null; email: string };
+type Org = { id: string; name: string; users: User[] };
+
+export function SuperAdminDocumentForm({ organizations }: { organizations: Org[] }) {
+  const [orgId, setOrgId] = useState<string>(organizations[0]?.id ?? "");
+
+  const users = useMemo(
+    () => organizations.find((o) => o.id === orgId)?.users ?? [],
+    [organizations, orgId],
+  );
+
+  if (organizations.length === 0) {
+    return (
+      <Card>
+        <h2 className="mb-2 font-medium">Upload document</h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          Create an organization with at least one user before uploading documents.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <h2 className="mb-3 font-medium">Upload document</h2>
+      <form
+        action={uploadDocument}
+        encType="multipart/form-data"
+        className="grid grid-cols-1 gap-3 md:grid-cols-2"
+      >
+        <div>
+          <Label>Organization</Label>
+          <Select value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
+            {organizations.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label>Assign to user</Label>
+          <Select name="ownerId" required disabled={users.length === 0}>
+            {users.length === 0 ? (
+              <option value="">No users in this organization</option>
+            ) : (
+              users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name ?? u.email}
+                </option>
+              ))
+            )}
+          </Select>
+        </div>
+        <div>
+          <Label>Document name</Label>
+          <Input name="name" required placeholder="OSHA 30 Certificate" />
+        </div>
+        <div>
+          <Label>Type</Label>
+          <Select name="type" required defaultValue="Certificate">
+            <option>Certificate</option>
+            <option>License</option>
+            <option>Insurance</option>
+            <option>Training</option>
+            <option>Compliance</option>
+            <option>Other</option>
+          </Select>
+        </div>
+        <div>
+          <Label>Expiration date</Label>
+          <Input name="expirationDate" type="date" required />
+        </div>
+        <div>
+          <Label>File (PDF, image, etc — max 15MB)</Label>
+          <Input name="file" type="file" required accept="application/pdf,image/*,.doc,.docx" />
+        </div>
+        <div className="md:col-span-2">
+          <Label>Notes</Label>
+          <Textarea name="notes" placeholder="Optional notes" />
+        </div>
+        <div className="md:col-span-2">
+          <Button type="submit" disabled={users.length === 0}>
+            Upload
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}

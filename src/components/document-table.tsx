@@ -14,9 +14,19 @@ type Doc = {
   fileSize: number;
   expirationDate: Date;
   owner?: { name: string | null; email: string } | null;
+  organization?: { name: string } | null;
 };
 
-export function DocumentTable({ docs, showOwner = false }: { docs: Doc[]; showOwner?: boolean }) {
+export function DocumentTable({
+  docs,
+  showOwner = false,
+  showOrganization = false,
+}: {
+  docs: Doc[];
+  showOwner?: boolean;
+  showOrganization?: boolean;
+}) {
+  const cols = 6 + (showOwner ? 1 : 0) + (showOrganization ? 1 : 0);
   return (
     <Card className="overflow-x-auto p-0">
       <table className="w-full text-sm">
@@ -24,6 +34,7 @@ export function DocumentTable({ docs, showOwner = false }: { docs: Doc[]; showOw
           <tr>
             <th className="px-4 py-3">Document</th>
             <th className="px-4 py-3">Type</th>
+            {showOrganization ? <th className="px-4 py-3">Organization</th> : null}
             {showOwner ? <th className="px-4 py-3">Owner</th> : null}
             <th className="px-4 py-3">Expires</th>
             <th className="px-4 py-3">Status</th>
@@ -41,6 +52,7 @@ export function DocumentTable({ docs, showOwner = false }: { docs: Doc[]; showOw
                 <div className="text-xs text-[hsl(var(--muted-foreground))]">{d.fileName}</div>
               </td>
               <td className="px-4 py-3">{d.type}</td>
+              {showOrganization ? <td className="px-4 py-3">{d.organization?.name ?? "—"}</td> : null}
               {showOwner ? <td className="px-4 py-3">{d.owner?.name ?? d.owner?.email ?? "—"}</td> : null}
               <td className="px-4 py-3">{formatDate(d.expirationDate)}</td>
               <td className="px-4 py-3">
@@ -59,7 +71,7 @@ export function DocumentTable({ docs, showOwner = false }: { docs: Doc[]; showOw
           ))}
           {docs.length === 0 ? (
             <tr>
-              <td colSpan={showOwner ? 7 : 6} className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]">
+              <td colSpan={cols} className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]">
                 No documents yet.
               </td>
             </tr>
