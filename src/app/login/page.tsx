@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 import { signIn, auth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { isSetupComplete } from "@/lib/actions/setup";
 
 function roleHome(role?: string) {
   if (role === "SUPER_ADMIN") return "/super-admin";
@@ -13,8 +17,10 @@ function roleHome(role?: string) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string; setup?: string }>;
 }) {
+  if (!(await isSetupComplete())) redirect("/setup");
+
   const session = await auth();
   const params = await searchParams;
   if (session?.user) redirect(params.callbackUrl ?? roleHome(session.user.role));
@@ -35,6 +41,12 @@ export default async function LoginPage({
         <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
           Document Manager — track certificate expirations.
         </p>
+
+        {params.setup === "complete" ? (
+          <div className="mt-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+            Super Admin created. Sign in to continue.
+          </div>
+        ) : null}
 
         {params.error ? (
           <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-200">

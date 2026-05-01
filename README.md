@@ -31,15 +31,20 @@ cp .env.example .env
 # - Set AUTH_SECRET to: openssl rand -base64 32
 # - Set BLOB_READ_WRITE_TOKEN (optional locally; required to upload)
 
-# 3. Apply schema and seed the bootstrap super admin
+# 3. Apply the schema
 npm run db:push
-npm run db:seed
 
 # 4. Run
 npm run dev
 ```
 
-Sign in with the credentials in `SEED_SUPER_ADMIN_EMAIL` / `SEED_SUPER_ADMIN_PASSWORD`.
+Open `http://localhost:3000` — you'll be redirected to `/setup` to create the
+first Super Admin. Once created, sign in at `/login`. The setup page is
+auto-disabled after a Super Admin exists.
+
+> Optional: `npm run db:seed` will create a bootstrap admin from
+> `SEED_SUPER_ADMIN_EMAIL` / `SEED_SUPER_ADMIN_PASSWORD` instead of using the
+> `/setup` page.
 
 ## Deploy to Vercel
 
@@ -47,14 +52,14 @@ Sign in with the credentials in `SEED_SUPER_ADMIN_EMAIL` / `SEED_SUPER_ADMIN_PAS
 2. Import the repo in Vercel.
 3. Add a Postgres database (Vercel Storage → Postgres). Vercel injects `DATABASE_URL` automatically.
 4. Add Blob storage (Vercel Storage → Blob). This injects `BLOB_READ_WRITE_TOKEN`.
-5. Add env vars: `AUTH_SECRET`, `SEED_SUPER_ADMIN_EMAIL`, `SEED_SUPER_ADMIN_PASSWORD`.
-6. Deploy. After the first deploy, run the schema sync and seed once:
+5. Add env var: `AUTH_SECRET` (`openssl rand -base64 32`).
+6. Deploy. After the first deploy, push the schema to the database once:
    ```bash
    npx vercel env pull .env.production.local
    npx prisma db push
-   npx tsx prisma/seed.ts
    ```
-7. Sign in at `/login`.
+7. Visit your Vercel URL — you'll be redirected to `/setup` to create the first
+   Super Admin in the browser. Setup page disables itself after.
 
 ## Roles & flows
 
