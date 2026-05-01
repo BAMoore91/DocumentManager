@@ -16,12 +16,12 @@ const docSchema = z.object({
   ownerId: z.string().min(1),
 });
 
-export async function uploadDocument(formData: FormData) {
+export async function uploadDocument(formData: FormData): Promise<void> {
   const session = await requireAuth();
 
   const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) return { error: "File is required" };
-  if (file.size > MAX_BYTES) return { error: "File exceeds 15 MB limit" };
+  if (!file || file.size === 0) throw new Error("File is required");
+  if (file.size > MAX_BYTES) throw new Error("File exceeds 15 MB limit");
 
   const parsed = docSchema.safeParse({
     name: formData.get("name"),
@@ -30,21 +30,21 @@ export async function uploadDocument(formData: FormData) {
     notes: formData.get("notes") ?? null,
     ownerId: formData.get("ownerId") ?? session.user.id,
   });
-  if (!parsed.success) return { error: "Invalid input" };
+  if (!parsed.success) throw new Error("Invalid input");
 
   const owner = await prisma.user.findUnique({ where: { id: parsed.data.ownerId } });
-  if (!owner) return { error: "Owner not found" };
+  if (!owner) throw new Error("Owner not found");
 
   if (session.user.role === "USER") {
-    if (owner.id !== session.user.id) return { error: "Forbidden" };
+    if (owner.id !== session.user.id) throw new Error("Forbidden");
   } else if (session.user.role === "ORG_ADMIN") {
-    if (owner.organizationId !== session.user.organizationId) return { error: "Forbidden" };
+    if (owner.organizationId !== session.user.organizationId) throw new Error("Forbidden");
   }
 
-  if (!owner.organizationId) return { error: "Owner has no organization" };
+  if (!owner.organizationId) throw new Error("Owner has no organization");
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return { error: "File storage is not configured. Set BLOB_READ_WRITE_TOKEN." };
+    throw new Error("File storage is not configured. Set BLOB_READ_WRITE_TOKEN.");
   }
 
   const safeName = file.name.replace(/[^\w.\-]+/g, "_");
@@ -74,21 +74,20 @@ export async function uploadDocument(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/documents");
   revalidatePath("/super-admin");
-  return { success: true };
 }
 
-export async function deleteDocument(formData: FormData) {
+export async function deleteDocument(formData: FormData): Promise<void> {
   const session = await requireAuth();
   const id = String(formData.get("id") ?? "");
   const doc = await prisma.document.findUnique({ where: { id } });
-  if (!doc) return { error: "Not found" };
+  if (!doc) throw new Error("Not found");
 
-  if (session.user.role === "USER" && doc.ownerId !== session.user.id) return { error: "Forbidden" };
+  if (session.user.role === "USER" && doc.ownerId !== session.user.id) throw new Error("Forbidden");
   if (
     session.user.role === "ORG_ADMIN" &&
     doc.organizationId !== session.user.organizationId
   )
-    return { error: "Forbidden" };
+    throw new Error("Forbidden");
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     try {
@@ -104,26 +103,24 @@ export async function deleteDocument(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   revalidatePath("/super-admin");
-  return { success: true };
 }
 
-export async function updateExpiration(formData: FormData) {
+export async function updateExpiration(formData: FormData): Promise<void> {
   const session = await requireRole("ORG_ADMIN", "SUPER_ADMIN", "USER");
   const id = String(formData.get("id") ?? "");
   const date = String(formData.get("expirationDate") ?? "");
-  if (!id || !date) return { error: "Missing input" };
+  if (!id || !date) throw new Error("Missing input");
 
   const doc = await prisma.document.findUnique({ where: { id } });
-  if (!doc) return { error: "Not found" };
-  if (session.user.role === "USER" && doc.ownerId !== session.user.id) return { error: "Forbidden" };
+  if (!doc) throw new Error("Not found");
+  if (session.user.role === "USER" && doc.ownerId !== session.user.id) throw new Error("Forbidden");
   if (
     session.user.role === "ORG_ADMIN" &&
     doc.organizationId !== session.user.organizationId
   )
-    return { error: "Forbidden" };
+    throw new Error("Forbidden");
 
   await prisma.document.update({ where: { id }, data: { expirationDate: new Date(date) } });
   revalidatePath("/admin/documents");
   revalidatePath("/documents");
-  return { success: true };
 }

@@ -1,27 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import type { Role } from "@prisma/client";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      role: Role;
-      organizationId: string | null;
-      email?: string | null;
-      name?: string | null;
-      image?: string | null;
-    };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string;
-    role: Role;
-    organizationId: string | null;
-  }
-}
-
 export const authConfig = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
@@ -37,9 +16,9 @@ export const authConfig = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.organizationId = token.organizationId;
+        session.user.id = token.id as string;
+        session.user.role = token.role as Role;
+        session.user.organizationId = (token.organizationId as string | null) ?? null;
       }
       return session;
     },

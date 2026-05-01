@@ -15,18 +15,18 @@ const newUserSchema = z.object({
   organizationId: z.string().nullable(),
 });
 
-export async function createUser(formData: FormData) {
+export async function createUser(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
 
   const role = formData.get("role") as Role;
   let organizationId = (formData.get("organizationId") as string | null) || null;
 
   if (session.user.role === "ORG_ADMIN") {
-    if (role === "SUPER_ADMIN") return { error: "Forbidden role" };
+    if (role === "SUPER_ADMIN") throw new Error("Forbidden role");
     organizationId = session.user.organizationId;
   }
   if (role !== "SUPER_ADMIN" && !organizationId) {
-    return { error: "Organization is required" };
+    throw new Error("Organization is required");
   }
   if (role === "SUPER_ADMIN") organizationId = null;
 
@@ -37,7 +37,7 @@ export async function createUser(formData: FormData) {
     role,
     organizationId,
   });
-  if (!parsed.success) return { error: "Invalid input" };
+  if (!parsed.success) throw new Error("Invalid input");
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   try {
@@ -51,50 +51,47 @@ export async function createUser(formData: FormData) {
       },
     });
   } catch {
-    return { error: "Email already in use" };
+    throw new Error("Email already in use");
   }
 
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
   revalidatePath("/super-admin");
   revalidatePath("/admin");
-  return { success: true };
 }
 
-export async function deleteUser(formData: FormData) {
+export async function deleteUser(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
   const id = String(formData.get("id") ?? "");
-  if (!id) return { error: "Missing id" };
-  if (id === session.user.id) return { error: "Cannot delete yourself" };
+  if (!id) throw new Error("Missing id");
+  if (id === session.user.id) throw new Error("Cannot delete yourself");
 
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) return { error: "Not found" };
+  if (!target) throw new Error("Not found");
 
   if (session.user.role === "ORG_ADMIN") {
-    if (target.organizationId !== session.user.organizationId) return { error: "Forbidden" };
-    if (target.role === "SUPER_ADMIN") return { error: "Forbidden" };
+    if (target.organizationId !== session.user.organizationId) throw new Error("Forbidden");
+    if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
   }
 
   await prisma.user.delete({ where: { id } });
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
-  return { success: true };
 }
 
-export async function resetPassword(formData: FormData) {
+export async function resetPassword(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
   const id = String(formData.get("id") ?? "");
   const password = String(formData.get("password") ?? "");
-  if (!id || password.length < 8) return { error: "Password must be at least 8 characters" };
+  if (!id || password.length < 8) throw new Error("Password must be at least 8 characters");
 
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) return { error: "Not found" };
+  if (!target) throw new Error("Not found");
   if (session.user.role === "ORG_ADMIN") {
-    if (target.organizationId !== session.user.organizationId) return { error: "Forbidden" };
-    if (target.role === "SUPER_ADMIN") return { error: "Forbidden" };
+    if (target.organizationId !== session.user.organizationId) throw new Error("Forbidden");
+    if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.update({ where: { id }, data: { passwordHash } });
-  return { success: true };
 }
