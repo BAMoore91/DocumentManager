@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  USER
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  documents Document[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  passwordHash   String
+  role           Role     @default(USER)
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents        Document[]    @relation("DocumentOwner")
+  uploadedDocuments Document[]   @relation("DocumentUploader")
+
+  @@index([organizationId])
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  fileUrl        String
+  fileName       String
+  fileSize       Int
+  mimeType       String
+  expirationDate DateTime
+  notes          String?
+  organizationId String
+  ownerId        String
+  uploadedById   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User         @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  uploadedBy   User         @relation("DocumentUploader", fields: [uploadedById], references: [id])
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([expirationDate])
+}
