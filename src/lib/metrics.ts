@@ -44,13 +44,32 @@ export async function getDocumentBuckets(orgId?: string): Promise<ExpirationBuck
 }
 
 export async function getSuperAdminMetrics() {
-  const [organizations, totalAdmins, totalUsers, buckets] = await Promise.all([
+  const [organizations, totalAdmins, totalUsers, buckets, storage] = await Promise.all([
     prisma.organization.count(),
     prisma.user.count({ where: { role: "ORG_ADMIN" } }),
     prisma.user.count({ where: { role: "USER" } }),
     getDocumentBuckets(),
+    prisma.document.aggregate({ _sum: { fileSize: true } }),
   ]);
-  return { organizations, totalAdmins, totalUsers, ...buckets };
+  return {
+    organizations,
+    totalAdmins,
+    totalUsers,
+    totalStorageBytes: storage._sum.fileSize ?? 0,
+    ...buckets,
+  };
+}
+
+export async function getStorageByOrg(): Promise<Map<string, number>> {
+  const rows = await prisma.document.groupBy({
+    by: ["organizationId"],
+    _sum: { fileSize: true },
+  });
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    map.set(r.organizationId, r._sum.fileSize ?? 0);
+  }
+  return map;
 }
 
 export async function getOrgMetrics(orgId: string) {

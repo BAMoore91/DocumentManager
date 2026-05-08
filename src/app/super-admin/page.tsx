@@ -1,15 +1,18 @@
 import { prisma } from "@/lib/db";
-import { getSuperAdminMetrics, getDocumentBuckets } from "@/lib/metrics";
+import { getSuperAdminMetrics, getDocumentBuckets, getStorageByOrg } from "@/lib/metrics";
 import { MetricGrid } from "@/components/metric-grid";
 import { Card } from "@/components/ui/card";
+import { formatBytes } from "@/lib/utils";
 
 export default async function SuperAdminDashboard() {
-  const m = await getSuperAdminMetrics();
-
-  const orgs = await prisma.organization.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, _count: { select: { users: true, documents: true } } },
-  });
+  const [m, storageByOrg, orgs] = await Promise.all([
+    getSuperAdminMetrics(),
+    getStorageByOrg(),
+    prisma.organization.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, _count: { select: { users: true, documents: true } } },
+    }),
+  ]);
 
   const orgBuckets = await Promise.all(orgs.map((o) => getDocumentBuckets(o.id).then((b) => ({ org: o, b }))));
 
@@ -28,6 +31,7 @@ export default async function SuperAdminDashboard() {
           { label: "Org Admins", value: m.totalAdmins },
           { label: "Users", value: m.totalUsers },
           { label: "Total Documents", value: m.total },
+          { label: "Total Storage", value: formatBytes(m.totalStorageBytes) },
         ]}
       />
 
@@ -60,6 +64,7 @@ export default async function SuperAdminDashboard() {
                 <th className="px-4 py-3">Organization</th>
                 <th className="px-4 py-3">Users</th>
                 <th className="px-4 py-3">Documents</th>
+                <th className="px-4 py-3">Storage</th>
                 <th className="px-4 py-3">Valid</th>
                 <th className="px-4 py-3">≤90d</th>
                 <th className="px-4 py-3">≤60d</th>
@@ -73,6 +78,9 @@ export default async function SuperAdminDashboard() {
                   <td className="px-4 py-3 font-medium">{org.name}</td>
                   <td className="px-4 py-3">{org._count.users}</td>
                   <td className="px-4 py-3">{b.total}</td>
+                  <td className="px-4 py-3 tabular-nums">
+                    {formatBytes(storageByOrg.get(org.id) ?? 0)}
+                  </td>
                   <td className="px-4 py-3 text-emerald-600 dark:text-emerald-300">{b.valid}</td>
                   <td className="px-4 py-3 text-yellow-600 dark:text-yellow-300">{b.expiring90}</td>
                   <td className="px-4 py-3 text-amber-600 dark:text-amber-300">{b.expiring60}</td>
@@ -82,7 +90,7 @@ export default async function SuperAdminDashboard() {
               ))}
               {orgBuckets.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]">
+                  <td colSpan={9} className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]">
                     No organizations yet — create one to get started.
                   </td>
                 </tr>
