@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,11 @@ export default async function OrganizationsPage() {
           <tbody>
             {orgs.map((o) => (
               <tr key={o.id} className="border-b border-[hsl(var(--border))] last:border-0">
-                <td className="px-4 py-3 font-medium">{o.name}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link href={`/super-admin/organizations/${o.id}`} className="hover:underline">
+                    {o.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{o._count.users}</td>
                 <td className="px-4 py-3">{o._count.documents}</td>
                 <td className="px-4 py-3">{formatDate(o.createdAt)}</td>
