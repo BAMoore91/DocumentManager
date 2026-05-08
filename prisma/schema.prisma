@@ -21,6 +21,7 @@ model Organization {
 
   users     User[]
   documents Document[]
+  events    CalendarEvent[]
 }
 
 model User {
@@ -36,6 +37,7 @@ model User {
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   documents        Document[]    @relation("DocumentOwner")
   uploadedDocuments Document[]   @relation("DocumentUploader")
+  createdEvents    CalendarEvent[] @relation("EventCreator")
 
   @@index([organizationId])
 }
@@ -63,4 +65,21 @@ model Document {
   @@index([organizationId])
   @@index([ownerId])
   @@index([expirationDate])
+}
+
+model CalendarEvent {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  date           DateTime
+  organizationId String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("EventCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([date])
 }

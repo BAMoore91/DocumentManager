@@ -5,24 +5,26 @@ import { ExpirationCalendar } from "@/components/expiration-calendar";
 export default async function AdminCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ m?: string; view?: string }>;
 }) {
   const session = await auth();
   if (!session?.user.organizationId) redirect("/login");
-  const { m } = await searchParams;
+  const { m, view } = await searchParams;
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Calendar</h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Document expirations across your organization. Click a document to open it.
+          Document expirations and events across your organization. Click a document to open it.
         </p>
       </div>
       <ExpirationCalendar
         orgId={session.user.organizationId}
         monthParam={m}
+        view={view}
         basePath="/admin/calendar"
+        canManageEvents
       />
     </div>
   );

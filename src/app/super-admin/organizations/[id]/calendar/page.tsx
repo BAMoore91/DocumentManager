@@ -8,10 +8,10 @@ export default async function OrgCalendarPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ m?: string; view?: string }>;
 }) {
   const { id } = await params;
-  const { m } = await searchParams;
+  const { m, view } = await searchParams;
   const org = await prisma.organization.findUnique({
     where: { id },
     select: { id: true, name: true },
@@ -29,13 +29,15 @@ export default async function OrgCalendarPage({
       <div>
         <h1 className="text-2xl font-semibold">{org.name} — Calendar</h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Document expirations across this organization.
+          Document expirations and events across this organization.
         </p>
       </div>
       <ExpirationCalendar
         orgId={org.id}
         monthParam={m}
+        view={view}
         basePath={`/super-admin/organizations/${org.id}/calendar`}
+        canManageEvents
       />
     </div>
   );
