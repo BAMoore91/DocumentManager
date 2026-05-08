@@ -17,6 +17,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/admin/users", label: "Users" },
     { href: "/admin/documents", label: "Documents" },
     { href: "/admin/calendar", label: "Calendar" },
+    { href: "/admin/toolbox-talks", label: "Toolbox Talks" },
     { href: "/admin/settings", label: "Settings" },
   ],
   USER: [

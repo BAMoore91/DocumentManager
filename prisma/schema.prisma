@@ -19,10 +19,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users       User[]
-  documents   Document[]
-  events      CalendarEvent[]
-  customRoles CustomRole[]
+  users        User[]
+  documents    Document[]
+  events       CalendarEvent[]
+  customRoles  CustomRole[]
+  toolboxTalks ToolboxTalk[]
 }
 
 model User {
@@ -36,11 +37,14 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customRole       CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
-  documents        Document[]    @relation("DocumentOwner")
-  uploadedDocuments Document[]   @relation("DocumentUploader")
-  createdEvents    CalendarEvent[] @relation("EventCreator")
+  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customRole        CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
+  documents         Document[]    @relation("DocumentOwner")
+  uploadedDocuments Document[]    @relation("DocumentUploader")
+  createdEvents     CalendarEvent[] @relation("EventCreator")
+  presentedTalks    ToolboxTalk[] @relation("TalkPresenter")
+  createdTalks      ToolboxTalk[] @relation("TalkCreator")
+  talkAttendances   ToolboxTalkAttendance[] @relation("TalkAttendee")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -100,4 +104,40 @@ model CalendarEvent {
 
   @@index([organizationId])
   @@index([date])
+}
+
+model ToolboxTalk {
+  id             String   @id @default(cuid())
+  topic          String
+  date           DateTime
+  location       String?
+  notes          String?
+  organizationId String
+  presenterId    String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  presenter    User         @relation("TalkPresenter", fields: [presenterId], references: [id])
+  createdBy    User         @relation("TalkCreator", fields: [createdById], references: [id])
+  attendances  ToolboxTalkAttendance[]
+
+  @@index([organizationId])
+  @@index([date])
+  @@index([presenterId])
+}
+
+model ToolboxTalkAttendance {
+  id         String   @id @default(cuid())
+  talkId     String
+  userId     String
+  attendedAt DateTime @default(now())
+
+  talk ToolboxTalk @relation(fields: [talkId], references: [id], onDelete: Cascade)
+  user User        @relation("TalkAttendee", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([talkId, userId])
+  @@index([talkId])
+  @@index([userId])
 }

@@ -24,10 +24,13 @@ const docChipStyles: Record<ExpirationStatus, string> = {
 const eventChipStyle =
   "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200";
 
-export type CalendarView = "all" | "documents" | "events";
+const talkChipStyle =
+  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200";
+
+export type CalendarView = "all" | "documents" | "events" | "talks";
 
 function parseView(v: string | undefined): CalendarView {
-  return v === "documents" || v === "events" ? v : "all";
+  return v === "documents" || v === "events" || v === "talks" ? v : "all";
 }
 
 function parseMonth(m: string | undefined): { year: number; monthIndex: number } {
@@ -93,8 +96,9 @@ export async function ExpirationCalendar({
 
   const showDocs = view === "all" || view === "documents";
   const showEvents = view === "all" || view === "events";
+  const showTalks = view === "all" || view === "talks";
 
-  const [docs, gridEvents, monthEvents] = await Promise.all([
+  const [docs, gridEvents, monthEvents, gridTalks] = await Promise.all([
     showDocs
       ? prisma.document.findMany({
           where: {
@@ -123,6 +127,16 @@ export async function ExpirationCalendar({
           orderBy: { date: "asc" },
         })
       : Promise.resolve([]),
+    showTalks
+      ? prisma.toolboxTalk.findMany({
+          where: {
+            organizationId: orgId,
+            date: { gte: firstCell, lt: queryEnd },
+          },
+          orderBy: { date: "asc" },
+          include: { presenter: { select: { name: true, email: true } } },
+        })
+      : Promise.resolve([]),
   ]);
 
   const docsByDay = new Map<string, typeof docs>();
@@ -141,6 +155,14 @@ export async function ExpirationCalendar({
     eventsByDay.set(key, list);
   }
 
+  const talksByDay = new Map<string, typeof gridTalks>();
+  for (const t of gridTalks) {
+    const key = dayKey(t.date);
+    const list = talksByDay.get(key) ?? [];
+    list.push(t);
+    talksByDay.set(key, list);
+  }
+
   const prev = shiftMonth(year, monthIndex, -1);
   const next = shiftMonth(year, monthIndex, 1);
   const todayKey = dayKey(new Date());
@@ -150,6 +172,7 @@ export async function ExpirationCalendar({
     { v: "all", label: "All" },
     { v: "documents", label: "Documents" },
     { v: "events", label: "Events" },
+    { v: "talks", label: "Talks" },
   ];
 
   return (
@@ -213,6 +236,7 @@ export async function ExpirationCalendar({
             const key = dayKey(d);
             const dayDocs = docsByDay.get(key) ?? [];
             const dayEvents = eventsByDay.get(key) ?? [];
+            const dayTalks = talksByDay.get(key) ?? [];
             const isToday = key === todayKey;
 
             return (
@@ -265,6 +289,30 @@ export async function ExpirationCalendar({
                       ★ {e.title}
                     </span>
                   ))}
+                  {dayTalks.map((t) => {
+                    const titleText = `${t.topic} — ${t.presenter.name ?? t.presenter.email}`;
+                    const className = cn(
+                      "block truncate rounded px-1.5 py-0.5 text-[11px]",
+                      talkChipStyle,
+                    );
+                    if (basePath.startsWith("/admin/")) {
+                      return (
+                        <Link
+                          key={t.id}
+                          href={`/admin/toolbox-talks/${t.id}`}
+                          title={titleText}
+                          className={cn(className, "hover:underline")}
+                        >
+                          🛠 {t.topic}
+                        </Link>
+                      );
+                    }
+                    return (
+                      <span key={t.id} title={titleText} className={className}>
+                        🛠 {t.topic}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             );
