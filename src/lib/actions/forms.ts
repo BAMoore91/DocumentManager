@@ -12,7 +12,15 @@ async function assertOrgAccess(role: string, sessionOrgId: string | null, orgId:
   if (role === "ORG_ADMIN" && sessionOrgId !== orgId) throw new Error("Forbidden");
 }
 
-const FIELD_TYPES = ["TEXT", "TEXTAREA", "NUMBER", "DATE", "CHECKBOX", "SELECT"] as const;
+const FIELD_TYPES = [
+  "TEXT",
+  "TEXTAREA",
+  "NUMBER",
+  "DATE",
+  "CHECKBOX",
+  "CHECKBOXES",
+  "SELECT",
+] as const;
 
 const formCreateSchema = z.object({
   organizationId: z.string().min(1),
@@ -140,13 +148,13 @@ const fieldSchema = z.object({
 });
 
 function parseOptions(input: string | null | undefined, type: FormFieldType): string | null {
-  if (type !== "SELECT") return null;
-  if (!input) throw new Error("Provide at least one option for a select field");
+  if (type !== "SELECT" && type !== "CHECKBOXES") return null;
+  if (!input) throw new Error("Provide at least one option for this field");
   const opts = input
     .split(/[\n,]/)
     .map((s) => s.trim())
     .filter(Boolean);
-  if (opts.length === 0) throw new Error("Provide at least one option for a select field");
+  if (opts.length === 0) throw new Error("Provide at least one option for this field");
   return JSON.stringify(opts);
 }
 
@@ -266,6 +274,22 @@ export async function submitForm(formData: FormData): Promise<void> {
           if (!opts.includes(s)) throw new Error(`${field.label} has an invalid value`);
         }
         value = s || null;
+        break;
+      }
+      case "CHECKBOXES": {
+        const raws = formData.getAll(`f_${field.id}`).map((v) => String(v));
+        if (field.required && raws.length === 0) {
+          throw new Error(`${field.label} is required`);
+        }
+        if (field.options) {
+          const opts: string[] = JSON.parse(field.options);
+          for (const v of raws) {
+            if (!opts.includes(v)) {
+              throw new Error(`${field.label} has an invalid value`);
+            }
+          }
+        }
+        value = raws;
         break;
       }
     }

@@ -24,6 +24,7 @@ enum FormFieldType {
   NUMBER
   DATE
   CHECKBOX
+  CHECKBOXES
   SELECT
 }
 

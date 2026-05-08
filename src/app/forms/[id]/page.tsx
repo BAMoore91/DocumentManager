@@ -9,6 +9,7 @@ import { submitForm } from "@/lib/actions/forms";
 import { formatDate } from "@/lib/utils";
 
 function formatValue(v: unknown): string {
+  if (Array.isArray(v)) return v.length === 0 ? "—" : v.join(", ");
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   return String(v);
@@ -123,6 +124,34 @@ export default async function FillFormPage({
                       {field.label}
                       {field.required ? <span className="text-red-600 dark:text-red-300">*</span> : null}
                     </label>
+                  </div>
+                );
+              case "CHECKBOXES":
+                return (
+                  <div key={field.id}>
+                    {label}
+                    <div className="flex flex-col gap-2 rounded-md border border-[hsl(var(--border))] px-3 py-2">
+                      {opts.length === 0 ? (
+                        <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                          No options configured.
+                        </span>
+                      ) : (
+                        opts.map((opt) => (
+                          <label
+                            key={opt}
+                            className="inline-flex items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              name={name}
+                              value={opt}
+                              className="h-4 w-4"
+                            />
+                            {opt}
+                          </label>
+                        ))
+                      )}
+                    </div>
                   </div>
                 );
               case "SELECT":

@@ -3,26 +3,24 @@ import { auth } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  addFormField,
-  deleteFormField,
-  setFormStatus,
-  updateForm,
-} from "@/lib/actions/forms";
+import { deleteFormField, setFormStatus, updateForm } from "@/lib/actions/forms";
+import { AddFormFieldForm } from "@/components/add-form-field-form";
 import { formatDate } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
-  TEXT: "Text",
+  TEXT: "Short text",
   TEXTAREA: "Long text",
   NUMBER: "Number",
   DATE: "Date",
-  CHECKBOX: "Checkbox",
+  CHECKBOX: "Single checkbox",
+  CHECKBOXES: "Multiple choice",
   SELECT: "Dropdown",
 };
 
 function formatValue(v: unknown): string {
+  if (Array.isArray(v)) return v.length === 0 ? "—" : v.join(", ");
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   return String(v);
@@ -144,45 +142,10 @@ export default async function FormBuilderPage({
           ) : null}
         </div>
 
-        <form action={addFormField} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input type="hidden" name="formId" value={form.id} />
-          <div>
-            <Label>Field label</Label>
-            <Input name="label" required maxLength={200} placeholder="What's the question?" />
-          </div>
-          <div>
-            <Label>Type</Label>
-            <Select name="type" required defaultValue="TEXT">
-              <option value="TEXT">Text</option>
-              <option value="TEXTAREA">Long text</option>
-              <option value="NUMBER">Number</option>
-              <option value="DATE">Date</option>
-              <option value="CHECKBOX">Checkbox</option>
-              <option value="SELECT">Dropdown</option>
-            </Select>
-          </div>
-          <div>
-            <Label>Placeholder (optional)</Label>
-            <Input name="placeholder" maxLength={200} />
-          </div>
-          <div className="flex items-end">
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" name="required" className="h-4 w-4" />
-              Required
-            </label>
-          </div>
-          <div className="md:col-span-2">
-            <Label>Dropdown options (one per line, only for Dropdown)</Label>
-            <Textarea
-              name="options"
-              maxLength={2000}
-              placeholder={"Option 1\nOption 2\nOption 3"}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <Button type="submit">Add field</Button>
-          </div>
-        </form>
+        <div className="mt-6 border-t border-[hsl(var(--border))] pt-6">
+          <h3 className="mb-3 text-sm font-medium">Add a field</h3>
+          <AddFormFieldForm formId={form.id} />
+        </div>
       </Card>
 
       <Card className="overflow-x-auto p-0">
