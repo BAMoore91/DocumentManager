@@ -4,8 +4,17 @@ import { Button } from "@/components/ui/button";
 import { uploadDocument } from "@/lib/actions/documents";
 
 type Owner = { id: string; name: string | null; email: string };
+type RequiredDoc = { id: string; name: string };
 
-export function DocumentForm({ owners, lockedOwnerId }: { owners: Owner[]; lockedOwnerId?: string }) {
+export function DocumentForm({
+  owners,
+  lockedOwnerId,
+  requiredDocuments = [],
+}: {
+  owners: Owner[];
+  lockedOwnerId?: string;
+  requiredDocuments?: RequiredDoc[];
+}) {
   return (
     <Card>
       <h2 className="mb-3 font-medium">Upload document</h2>
@@ -45,6 +54,22 @@ export function DocumentForm({ owners, lockedOwnerId }: { owners: Owner[]; locke
               ))}
             </Select>
           )}
+        </div>
+        <div className="md:col-span-2">
+          <Label>Fulfills requirement (optional)</Label>
+          <Select name="requiredDocumentId" defaultValue="">
+            <option value="">— None —</option>
+            {requiredDocuments.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </Select>
+          {requiredDocuments.length === 0 ? (
+            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+              Required documents are configured under Organization Settings.
+            </p>
+          ) : null}
         </div>
         <div className="md:col-span-2">
           <Label>File (PDF, image, etc — max 15MB)</Label>

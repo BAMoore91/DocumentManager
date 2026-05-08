@@ -10,7 +10,20 @@ export default async function MyDocumentsPage() {
 
   const me = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      organizationId: true,
+      customRole: {
+        select: {
+          requiredDocuments: {
+            orderBy: { name: "asc" },
+            select: { id: true, name: true },
+          },
+        },
+      },
+    },
   });
   if (!me) redirect("/login");
 
@@ -19,10 +32,16 @@ export default async function MyDocumentsPage() {
     orderBy: { expirationDate: "asc" },
   });
 
+  const requiredDocuments = me.customRole?.requiredDocuments ?? [];
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">My Documents</h1>
-      <DocumentForm owners={[me]} lockedOwnerId={me.id} />
+      <DocumentForm
+        owners={[me]}
+        lockedOwnerId={me.id}
+        requiredDocuments={requiredDocuments}
+      />
       <DocumentTable docs={docs} />
     </div>
   );

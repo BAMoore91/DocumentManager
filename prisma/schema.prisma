@@ -19,11 +19,12 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users        User[]
-  documents    Document[]
-  events       CalendarEvent[]
-  customRoles  CustomRole[]
-  toolboxTalks ToolboxTalk[]
+  users             User[]
+  documents         Document[]
+  events            CalendarEvent[]
+  customRoles       CustomRole[]
+  toolboxTalks      ToolboxTalk[]
+  requiredDocuments RequiredDocument[]
 }
 
 model User {
@@ -51,28 +52,31 @@ model User {
 }
 
 model Document {
-  id             String   @id @default(cuid())
-  name           String
-  type           String
-  fileUrl        String
-  fileName       String
-  fileSize       Int
-  mimeType       String
-  expirationDate DateTime
-  notes          String?
-  organizationId String
-  ownerId        String
-  uploadedById   String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  name               String
+  type               String
+  fileUrl            String
+  fileName           String
+  fileSize           Int
+  mimeType           String
+  expirationDate     DateTime
+  notes              String?
+  organizationId     String
+  ownerId            String
+  uploadedById       String
+  requiredDocumentId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  owner        User         @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  uploadedBy   User         @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner            User              @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  uploadedBy       User              @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  requiredDocument RequiredDocument? @relation(fields: [requiredDocumentId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([ownerId])
   @@index([expirationDate])
+  @@index([requiredDocumentId])
 }
 
 model CustomRole {
@@ -82,8 +86,24 @@ model CustomRole {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users             User[]
+  requiredDocuments RequiredDocument[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model RequiredDocument {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  users        User[]
+  customRoles  CustomRole[]
+  documents    Document[]
 
   @@unique([organizationId, name])
   @@index([organizationId])

@@ -9,7 +9,7 @@ export default async function AdminDocumentsPage() {
   if (!session?.user.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  const [members, docs] = await Promise.all([
+  const [members, docs, requiredDocuments] = await Promise.all([
     prisma.user.findMany({
       where: { organizationId: orgId },
       orderBy: { name: "asc" },
@@ -20,12 +20,17 @@ export default async function AdminDocumentsPage() {
       orderBy: { expirationDate: "asc" },
       include: { owner: { select: { name: true, email: true } } },
     }),
+    prisma.requiredDocument.findMany({
+      where: { organizationId: orgId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
   ]);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Documents</h1>
-      <DocumentForm owners={members} />
+      <DocumentForm owners={members} requiredDocuments={requiredDocuments} />
       <DocumentTable docs={docs} showOwner />
     </div>
   );

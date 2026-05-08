@@ -14,6 +14,7 @@ const docSchema = z.object({
   expirationDate: z.string().min(1),
   notes: z.string().max(2000).optional().nullable(),
   ownerId: z.string().min(1),
+  requiredDocumentId: z.string().optional().nullable(),
 });
 
 export async function uploadDocument(formData: FormData): Promise<void> {
@@ -29,6 +30,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
     expirationDate: formData.get("expirationDate"),
     notes: formData.get("notes") ?? null,
     ownerId: formData.get("ownerId") ?? session.user.id,
+    requiredDocumentId: (formData.get("requiredDocumentId") as string | null) || null,
   });
   if (!parsed.success) throw new Error("Invalid input");
 
@@ -42,6 +44,17 @@ export async function uploadDocument(formData: FormData): Promise<void> {
   }
 
   if (!owner.organizationId) throw new Error("Owner has no organization");
+
+  let requiredDocumentId: string | null = null;
+  if (parsed.data.requiredDocumentId) {
+    const req = await prisma.requiredDocument.findUnique({
+      where: { id: parsed.data.requiredDocumentId },
+    });
+    if (!req || req.organizationId !== owner.organizationId) {
+      throw new Error("Invalid required document");
+    }
+    requiredDocumentId = req.id;
+  }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     throw new Error("File storage is not configured. Set BLOB_READ_WRITE_TOKEN.");
@@ -66,6 +79,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
       organizationId: owner.organizationId,
       ownerId: owner.id,
       uploadedById: session.user.id,
+      requiredDocumentId,
     },
   });
 

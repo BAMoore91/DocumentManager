@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { uploadDocument } from "@/lib/actions/documents";
 
 type User = { id: string; name: string | null; email: string };
-type Org = { id: string; name: string; users: User[] };
+type RequiredDoc = { id: string; name: string };
+type Org = { id: string; name: string; users: User[]; requiredDocuments: RequiredDoc[] };
 
 export function SuperAdminDocumentForm({ organizations }: { organizations: Org[] }) {
   const [orgId, setOrgId] = useState<string>(organizations[0]?.id ?? "");
 
-  const users = useMemo(
-    () => organizations.find((o) => o.id === orgId)?.users ?? [],
+  const selectedOrg = useMemo(
+    () => organizations.find((o) => o.id === orgId),
     [organizations, orgId],
   );
+  const users = selectedOrg?.users ?? [];
+  const requiredDocs = selectedOrg?.requiredDocuments ?? [];
 
   if (organizations.length === 0) {
     return (
@@ -80,6 +83,17 @@ export function SuperAdminDocumentForm({ organizations }: { organizations: Org[]
           <Input name="expirationDate" type="date" required />
         </div>
         <div>
+          <Label>Fulfills requirement (optional)</Label>
+          <Select name="requiredDocumentId" defaultValue="">
+            <option value="">— None —</option>
+            {requiredDocs.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="md:col-span-2">
           <Label>File (PDF, image, etc — max 15MB)</Label>
           <Input name="file" type="file" required accept="application/pdf,image/*,.doc,.docx" />
         </div>

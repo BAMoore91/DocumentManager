@@ -14,6 +14,10 @@ export default async function SuperAdminDocumentsPage() {
           orderBy: [{ name: "asc" }, { email: "asc" }],
           select: { id: true, name: true, email: true },
         },
+        requiredDocuments: {
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        },
       },
     }),
     prisma.document.findMany({
