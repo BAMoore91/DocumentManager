@@ -20,6 +20,7 @@ export async function createUser(formData: FormData): Promise<void> {
 
   const role = formData.get("role") as Role;
   let organizationId = (formData.get("organizationId") as string | null) || null;
+  const customRoleIdRaw = (formData.get("customRoleId") as string | null) || "";
 
   if (session.user.role === "ORG_ADMIN") {
     if (role === "SUPER_ADMIN") throw new Error("Forbidden role");
@@ -39,6 +40,15 @@ export async function createUser(formData: FormData): Promise<void> {
   });
   if (!parsed.success) throw new Error("Invalid input");
 
+  let customRoleId: string | null = null;
+  if (customRoleIdRaw && parsed.data.organizationId) {
+    const cr = await prisma.customRole.findUnique({ where: { id: customRoleIdRaw } });
+    if (!cr || cr.organizationId !== parsed.data.organizationId) {
+      throw new Error("Invalid title");
+    }
+    customRoleId = cr.id;
+  }
+
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   try {
     await prisma.user.create({
@@ -48,6 +58,7 @@ export async function createUser(formData: FormData): Promise<void> {
         passwordHash,
         role: parsed.data.role,
         organizationId: parsed.data.organizationId,
+        customRoleId,
       },
     });
   } catch {

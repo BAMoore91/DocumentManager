@@ -19,9 +19,10 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  documents Document[]
-  events    CalendarEvent[]
+  users       User[]
+  documents   Document[]
+  events      CalendarEvent[]
+  customRoles CustomRole[]
 }
 
 model User {
@@ -31,15 +32,18 @@ model User {
   passwordHash   String
   role           Role     @default(USER)
   organizationId String?
+  customRoleId   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customRole       CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
   documents        Document[]    @relation("DocumentOwner")
   uploadedDocuments Document[]   @relation("DocumentUploader")
   createdEvents    CalendarEvent[] @relation("EventCreator")
 
   @@index([organizationId])
+  @@index([customRoleId])
 }
 
 model Document {
@@ -65,6 +69,20 @@ model Document {
   @@index([organizationId])
   @@index([ownerId])
   @@index([expirationDate])
+}
+
+model CustomRole {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users        User[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 model CalendarEvent {
