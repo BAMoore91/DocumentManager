@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -94,7 +95,11 @@ export default async function AdminUsersPage() {
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-b border-[hsl(var(--border))] last:border-0">
-                <td className="px-4 py-3 font-medium">{u.name ?? "—"}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link href={`/admin/users/${u.id}`} className="hover:underline">
+                    {u.name ?? u.email}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.role.replace("_", " ")}</td>
                 <td className="px-4 py-3">
