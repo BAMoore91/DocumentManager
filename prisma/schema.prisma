@@ -41,6 +41,7 @@ model Organization {
   toolboxTalks      ToolboxTalk[]
   requiredDocuments RequiredDocument[]
   forms             Form[]
+  forumTopics       ForumTopic[]
 }
 
 model User {
@@ -64,6 +65,8 @@ model User {
   talkAttendances   ToolboxTalkAttendance[] @relation("TalkAttendee")
   createdForms      Form[]        @relation("FormCreator")
   formSubmissions   FormSubmission[] @relation("FormSubmitter")
+  forumTopics       ForumTopic[]  @relation("ForumTopicAuthor")
+  forumReplies      ForumReply[]  @relation("ForumReplyAuthor")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -228,4 +231,37 @@ model FormSubmission {
 
   @@index([formId])
   @@index([userId])
+}
+
+model ForumTopic {
+  id             String   @id @default(cuid())
+  title          String
+  body           String
+  organizationId String
+  authorId       String
+  pinned         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author       User         @relation("ForumTopicAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  replies      ForumReply[]
+
+  @@index([organizationId])
+  @@index([organizationId, pinned, updatedAt])
+}
+
+model ForumReply {
+  id        String   @id @default(cuid())
+  topicId   String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic  ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author User       @relation("ForumReplyAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+  @@index([authorId])
 }

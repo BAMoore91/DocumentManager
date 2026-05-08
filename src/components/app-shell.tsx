@@ -19,12 +19,14 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/admin/calendar", label: "Calendar" },
     { href: "/admin/toolbox-talks", label: "Toolbox Talks" },
     { href: "/forms", label: "Forms" },
+    { href: "/forum", label: "Forum" },
     { href: "/admin/settings", label: "Settings" },
   ],
   USER: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/documents", label: "My Documents" },
     { href: "/forms", label: "Forms" },
+    { href: "/forum", label: "Forum" },
   ],
 };
 
