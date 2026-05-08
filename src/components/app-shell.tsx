@@ -9,7 +9,7 @@ const navByRole: Record<Role, NavItem[]> = {
   SUPER_ADMIN: [
     { href: "/super-admin", label: "Dashboard" },
     { href: "/super-admin/organizations", label: "Organizations" },
-    { href: "/super-admin/users", label: "Admins" },
+    { href: "/super-admin/users", label: "Users" },
     { href: "/super-admin/documents", label: "Documents" },
   ],
   ORG_ADMIN: [
