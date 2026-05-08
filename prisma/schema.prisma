@@ -42,6 +42,7 @@ model Organization {
   requiredDocuments RequiredDocument[]
   forms             Form[]
   forumTopics       ForumTopic[]
+  kbArticles        KbArticle[]
 }
 
 model User {
@@ -67,6 +68,7 @@ model User {
   formSubmissions   FormSubmission[] @relation("FormSubmitter")
   forumTopics       ForumTopic[]  @relation("ForumTopicAuthor")
   forumReplies      ForumReply[]  @relation("ForumReplyAuthor")
+  kbArticles        KbArticle[]   @relation("KbArticleAuthor")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -264,4 +266,25 @@ model ForumReply {
 
   @@index([topicId])
   @@index([authorId])
+}
+
+model KbArticle {
+  id             String   @id @default(cuid())
+  title          String
+  body           String
+  organizationId String
+  authorId       String
+  fileUrl        String?
+  fileName       String?
+  fileSize       Int?
+  mimeType       String?
+  published      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author       User         @relation("KbArticleAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, published])
 }

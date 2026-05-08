@@ -20,6 +20,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/admin/toolbox-talks", label: "Toolbox Talks" },
     { href: "/forms", label: "Forms" },
     { href: "/forum", label: "Forum" },
+    { href: "/kb", label: "Knowledge Base" },
     { href: "/admin/settings", label: "Settings" },
   ],
   USER: [
@@ -27,6 +28,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/documents", label: "My Documents" },
     { href: "/forms", label: "Forms" },
     { href: "/forum", label: "Forum" },
+    { href: "/kb", label: "Knowledge Base" },
   ],
 };
 

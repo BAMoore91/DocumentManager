@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { ChevronRight, Tags, ClipboardCheck, FileText } from "lucide-react";
+import { ChevronRight, Tags, ClipboardCheck, FileText, BookOpen } from "lucide-react";
 
 const sections = [
   {
@@ -25,6 +25,13 @@ const sections = [
     description:
       "Build custom fillable forms — daily checklists, incident reports, sign-offs.",
     icon: FileText,
+  },
+  {
+    href: "/admin/settings/kb",
+    title: "Knowledge Base",
+    description:
+      "Publish reference articles and uploads — policies, SOPs, training materials.",
+    icon: BookOpen,
   },
 ];
 
