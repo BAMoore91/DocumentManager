@@ -48,7 +48,7 @@ export async function createForm(formData: FormData): Promise<void> {
     throw new Error("A form with that name already exists");
   }
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/forms");
   revalidatePath("/admin/forms");
   redirect(`/admin/forms/${createdId}`);
 }
@@ -81,7 +81,7 @@ export async function updateForm(formData: FormData): Promise<void> {
     throw new Error("A form with that name already exists");
   }
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/forms");
   revalidatePath("/admin/forms");
   revalidatePath(`/admin/forms/${form.id}`);
   revalidatePath("/forms");
@@ -98,7 +98,7 @@ export async function deleteForm(formData: FormData): Promise<void> {
 
   await prisma.form.delete({ where: { id } });
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/forms");
   revalidatePath("/admin/forms");
   revalidatePath("/forms");
 }
@@ -124,7 +124,7 @@ export async function setFormStatus(formData: FormData): Promise<void> {
 
   await prisma.form.update({ where: { id }, data: { status } });
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/forms");
   revalidatePath("/admin/forms");
   revalidatePath(`/admin/forms/${id}`);
   revalidatePath("/forms");

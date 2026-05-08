@@ -53,10 +53,10 @@ export default async function FormBuilderPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/admin/settings"
+        href="/admin/settings/forms"
         className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
       >
-        ← Settings
+        ← Forms
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-3">

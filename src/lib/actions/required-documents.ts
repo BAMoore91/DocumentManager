@@ -57,7 +57,7 @@ export async function createRequiredDocument(formData: FormData): Promise<void> 
     throw new Error("A required document with that name already exists");
   }
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/required-documents");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   revalidatePath(`/super-admin/organizations/${organizationId}`);
@@ -74,7 +74,7 @@ export async function deleteRequiredDocument(formData: FormData): Promise<void> 
 
   await prisma.requiredDocument.delete({ where: { id } });
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/required-documents");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   revalidatePath(`/super-admin/organizations/${req.organizationId}`);
@@ -102,7 +102,7 @@ export async function setRequiredDocumentRoles(formData: FormData): Promise<void
     },
   });
 
-  revalidatePath("/admin/settings");
+  revalidatePath("/admin/settings/required-documents");
   revalidatePath("/admin");
   revalidatePath("/dashboard");
   revalidatePath(`/super-admin/organizations/${req.organizationId}`);
