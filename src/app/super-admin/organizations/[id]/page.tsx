@@ -17,12 +17,20 @@ export default async function OrganizationDashboardPage({
 
   return (
     <div className="space-y-4">
-      <Link
-        href="/super-admin/organizations"
-        className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-      >
-        ← All organizations
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/super-admin/organizations"
+          className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+        >
+          ← All organizations
+        </Link>
+        <Link
+          href={`/super-admin/organizations/${org.id}/calendar`}
+          className="rounded-md border border-[hsl(var(--border))] px-3 py-1.5 text-sm hover:bg-[hsl(var(--muted))]"
+        >
+          View calendar →
+        </Link>
+      </div>
       <OrgDashboard
         orgId={org.id}
         title={org.name}
