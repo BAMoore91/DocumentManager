@@ -13,6 +13,20 @@ enum Role {
   USER
 }
 
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum FormFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DATE
+  CHECKBOX
+  SELECT
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -25,6 +39,7 @@ model Organization {
   customRoles       CustomRole[]
   toolboxTalks      ToolboxTalk[]
   requiredDocuments RequiredDocument[]
+  forms             Form[]
 }
 
 model User {
@@ -46,6 +61,8 @@ model User {
   presentedTalks    ToolboxTalk[] @relation("TalkPresenter")
   createdTalks      ToolboxTalk[] @relation("TalkCreator")
   talkAttendances   ToolboxTalkAttendance[] @relation("TalkAttendee")
+  createdForms      Form[]        @relation("FormCreator")
+  formSubmissions   FormSubmission[] @relation("FormSubmitter")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -159,5 +176,55 @@ model ToolboxTalkAttendance {
 
   @@unique([talkId, userId])
   @@index([talkId])
+  @@index([userId])
+}
+
+model Form {
+  id             String     @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  status         FormStatus @default(DRAFT)
+  createdById    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("FormCreator", fields: [createdById], references: [id])
+  fields       FormField[]
+  submissions  FormSubmission[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model FormField {
+  id          String        @id @default(cuid())
+  formId      String
+  label       String
+  type        FormFieldType
+  required    Boolean       @default(false)
+  position    Int           @default(0)
+  options     String?
+  placeholder String?
+  createdAt   DateTime      @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@index([formId, position])
+}
+
+model FormSubmission {
+  id          String   @id @default(cuid())
+  formId      String
+  userId      String
+  values      Json
+  submittedAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user User @relation("FormSubmitter", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
   @@index([userId])
 }
