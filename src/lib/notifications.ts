@@ -57,6 +57,24 @@ export async function notifyForumReply(
   });
 }
 
+export async function notifyCapaAssigned(
+  userId: string,
+  capa: { id: string; title: string; dueDate: Date | null },
+) {
+  await prisma.notification.create({
+    data: {
+      userId,
+      type: "CAPA_ASSIGNED" as const,
+      title: `Corrective action assigned: ${capa.title}`,
+      body: capa.dueDate
+        ? `Due ${formatDateLocal(capa.dueDate)}`
+        : "No due date set",
+      linkUrl: `/corrective-actions/${capa.id}`,
+      sourceId: capa.id,
+    },
+  });
+}
+
 export async function expectedAttendeeIds(
   organizationId: string,
   roleIds: string[],
