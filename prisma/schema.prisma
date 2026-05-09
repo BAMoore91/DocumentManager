@@ -926,3 +926,18 @@ model AuditLog {
   @@index([userId])
   @@index([action])
 }
+
+model ContactSubmission {
+  id           String   @id @default(cuid())
+  name         String
+  businessName String
+  address      String
+  phone        String
+  email        String
+  userCount    Int
+  industry     String
+  message      String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}

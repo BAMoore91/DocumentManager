@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { isSetupComplete } from "@/lib/actions/setup";
+import { submitContact } from "@/lib/actions/contact";
 import {
   Activity,
   AlertTriangle,
@@ -208,7 +209,11 @@ const featuresByGroup: { name: string; tagline: string; items: Feature[] }[] = [
   },
 ];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ contact?: string }>;
+}) {
   if (!(await isSetupComplete())) redirect("/setup");
 
   const session = await auth();
@@ -217,6 +222,10 @@ export default async function Home() {
     if (session.user.role === "ORG_ADMIN") redirect("/admin");
     redirect("/dashboard");
   }
+
+  const { contact } = await searchParams;
+  const contactSuccess = contact === "success";
+  const contactError = contact === "error";
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
@@ -227,12 +236,20 @@ export default async function Home() {
             <ShieldCheck className="h-5 w-5 text-[hsl(var(--primary))]" />
             DocManager
           </div>
-          <Link
-            href="/login"
-            className="inline-flex h-9 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          >
-            Sign in
-          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <a
+              href="#contact"
+              className="hidden text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] sm:inline"
+            >
+              Contact us
+            </a>
+            <Link
+              href="/login"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -390,19 +407,184 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
-        <h2 className="text-2xl font-semibold">Ready to roll it out?</h2>
-        <p className="mt-2 text-[hsl(var(--muted-foreground))]">
-          Sign in to your organization to get started.
-        </p>
-        <div className="mt-6">
-          <Link
-            href="/login"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-6 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          >
-            Sign in
-          </Link>
+      {/* Contact */}
+      <section
+        id="contact"
+        className="border-t border-[hsl(var(--border))] scroll-mt-20"
+      >
+        <div className="mx-auto max-w-3xl px-4 py-16">
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-semibold">Talk to us</h2>
+            <p className="mt-2 text-[hsl(var(--muted-foreground))]">
+              Tell us about your team and we'll be in touch about getting your
+              organization set up.
+            </p>
+          </div>
+
+          {contactSuccess ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950">
+              <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-300" />
+              <h3 className="mt-3 text-lg font-medium text-emerald-900 dark:text-emerald-100">
+                Thanks — we received your request.
+              </h3>
+              <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
+                A team member will reach out within one business day.
+              </p>
+              <div className="mt-4">
+                <Link
+                  href="/"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-emerald-300 bg-white px-4 text-sm font-medium text-emerald-900 hover:bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-900/30 dark:text-emerald-100"
+                >
+                  Back to home
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+              {contactError ? (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-950 dark:text-red-200">
+                  Something didn't look right — please double-check the fields
+                  and try again. Email is required and user count must be a
+                  positive number.
+                </div>
+              ) : null}
+              <form action={submitContact} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label htmlFor="c-name" className="mb-1 block text-sm font-medium">
+                    Your name <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-name"
+                    name="name"
+                    required
+                    maxLength={120}
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="c-business" className="mb-1 block text-sm font-medium">
+                    Business name <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-business"
+                    name="businessName"
+                    required
+                    maxLength={200}
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="c-address" className="mb-1 block text-sm font-medium">
+                    Address <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-address"
+                    name="address"
+                    required
+                    maxLength={400}
+                    placeholder="Street, city, state, zip"
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="c-phone" className="mb-1 block text-sm font-medium">
+                    Phone number <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    maxLength={60}
+                    autoComplete="tel"
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="c-email" className="mb-1 block text-sm font-medium">
+                    Email <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={200}
+                    autoComplete="email"
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="c-users" className="mb-1 block text-sm font-medium">
+                    Number of users <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="c-users"
+                    name="userCount"
+                    type="number"
+                    required
+                    min={1}
+                    max={100000}
+                    placeholder="e.g. 25"
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="c-industry" className="mb-1 block text-sm font-medium">
+                    Industry <span className="text-red-600">*</span>
+                  </label>
+                  <select
+                    id="c-industry"
+                    name="industry"
+                    required
+                    defaultValue=""
+                    className="h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  >
+                    <option value="" disabled>
+                      Choose…
+                    </option>
+                    <option>Construction</option>
+                    <option>Manufacturing</option>
+                    <option>Oil &amp; gas</option>
+                    <option>Utilities</option>
+                    <option>Transportation &amp; logistics</option>
+                    <option>Mining</option>
+                    <option>Agriculture</option>
+                    <option>Healthcare</option>
+                    <option>Government / Municipal</option>
+                    <option>Education</option>
+                    <option>Retail / Hospitality</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="c-message" className="mb-1 block text-sm font-medium">
+                    Anything else? (optional)
+                  </label>
+                  <textarea
+                    id="c-message"
+                    name="message"
+                    maxLength={5000}
+                    rows={4}
+                    placeholder="Tell us about your safety program or what you'd like to learn more about."
+                    className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <button
+                    type="submit"
+                    className="inline-flex h-11 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-6 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
+                  >
+                    Send request
+                  </button>
+                  <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+                    We'll only use this info to follow up about getting your
+                    organization set up.
+                  </p>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </section>
 
