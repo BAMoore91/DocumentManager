@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
+import { expectedAttendeeIds, notifyToolboxTalkAssigned } from "@/lib/notifications";
 
 const createSchema = z.object({
   organizationId: z.string().min(1),
@@ -74,7 +75,7 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
     .filter(Boolean);
   await validateAssignmentIds(organizationId, assignedRoleIds, assignedUserIds);
 
-  await prisma.toolboxTalk.create({
+  const created = await prisma.toolboxTalk.create({
     data: {
       organizationId,
       topic,
@@ -86,7 +87,15 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
       assignedRoles: { connect: assignedRoleIds.map((id) => ({ id })) },
       assignedUsers: { connect: assignedUserIds.map((id) => ({ id })) },
     },
+    select: { id: true, topic: true, date: true },
   });
+
+  const expectedIds = await expectedAttendeeIds(
+    organizationId,
+    assignedRoleIds,
+    assignedUserIds,
+  );
+  await notifyToolboxTalkAssigned(expectedIds, created);
 
   revalidatePath("/admin/toolbox-talks");
   revalidatePath("/admin/calendar");
@@ -98,9 +107,15 @@ export async function setToolboxTalkAssignments(formData: FormData): Promise<voi
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id");
 
-  const talk = await prisma.toolboxTalk.findUnique({ where: { id } });
-  if (!talk) throw new Error("Not found");
-  await assertOrgAccess(session.user.role, session.user.organizationId, talk.organizationId);
+  const existing = await prisma.toolboxTalk.findUnique({
+    where: { id },
+    include: {
+      assignedRoles: { select: { id: true } },
+      assignedUsers: { select: { id: true } },
+    },
+  });
+  if (!existing) throw new Error("Not found");
+  await assertOrgAccess(session.user.role, session.user.organizationId, existing.organizationId);
 
   const assignedRoleIds = formData
     .getAll("assignedRoleIds")
@@ -110,17 +125,34 @@ export async function setToolboxTalkAssignments(formData: FormData): Promise<voi
     .getAll("assignedUserIds")
     .map((v) => String(v))
     .filter(Boolean);
-  await validateAssignmentIds(talk.organizationId, assignedRoleIds, assignedUserIds);
+  await validateAssignmentIds(existing.organizationId, assignedRoleIds, assignedUserIds);
 
-  await prisma.toolboxTalk.update({
-    where: { id: talk.id },
+  const oldExpectedIds = new Set(
+    await expectedAttendeeIds(
+      existing.organizationId,
+      existing.assignedRoles.map((r) => r.id),
+      existing.assignedUsers.map((u) => u.id),
+    ),
+  );
+
+  const updated = await prisma.toolboxTalk.update({
+    where: { id: existing.id },
     data: {
       assignedRoles: { set: assignedRoleIds.map((rid) => ({ id: rid })) },
       assignedUsers: { set: assignedUserIds.map((uid) => ({ id: uid })) },
     },
+    select: { id: true, topic: true, date: true },
   });
 
-  revalidatePath(`/admin/toolbox-talks/${talk.id}`);
+  const newExpectedIds = await expectedAttendeeIds(
+    existing.organizationId,
+    assignedRoleIds,
+    assignedUserIds,
+  );
+  const toNotify = newExpectedIds.filter((uid) => !oldExpectedIds.has(uid));
+  await notifyToolboxTalkAssigned(toNotify, updated);
+
+  revalidatePath(`/admin/toolbox-talks/${existing.id}`);
 }
 
 export async function deleteToolboxTalk(formData: FormData): Promise<void> {
@@ -132,6 +164,9 @@ export async function deleteToolboxTalk(formData: FormData): Promise<void> {
   if (!talk) throw new Error("Not found");
   await assertOrgAccess(session.user.role, session.user.organizationId, talk.organizationId);
 
+  await prisma.notification.deleteMany({
+    where: { sourceId: talk.id, type: "TOOLBOX_TALK_ASSIGNED" },
+  });
   await prisma.toolboxTalk.delete({ where: { id } });
 
   revalidatePath("/admin/toolbox-talks");

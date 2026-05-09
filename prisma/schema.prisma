@@ -41,6 +41,10 @@ enum JhaStatus {
   RESOLVED
 }
 
+enum NotificationType {
+  TOOLBOX_TALK_ASSIGNED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -87,6 +91,7 @@ model User {
   kbArticles        KbArticle[]   @relation("KbArticleAuthor")
   jhaReports        JhaReport[]   @relation("JhaReporter")
   sdsSheets         SdsSheet[]    @relation("SdsUploader")
+  notifications     Notification[] @relation("UserNotifications")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -324,6 +329,23 @@ model JhaPhoto {
   jha JhaReport @relation(fields: [jhaId], references: [id], onDelete: Cascade)
 
   @@index([jhaId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  linkUrl   String?
+  sourceId  String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([sourceId])
 }
 
 model SdsSheet {
