@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getOrgMetrics } from "@/lib/metrics";
 import { getOrgCompliance, getOrgTrainingCompliance } from "@/lib/compliance";
@@ -10,10 +11,12 @@ export async function OrgDashboard({
   orgId,
   title = "Organization Dashboard",
   subtitle,
+  userLinkBasePath,
 }: {
   orgId: string;
   title?: string;
   subtitle?: string;
+  userLinkBasePath?: string;
 }) {
   const [m, upcoming, compliance, trainingCompliance] = await Promise.all([
     getOrgMetrics(orgId),
@@ -93,7 +96,18 @@ export async function OrgDashboard({
                   key={u.userId}
                   className="border-b border-[hsl(var(--border))] last:border-0"
                 >
-                  <td className="px-4 py-3 font-medium">{u.name ?? u.email}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {userLinkBasePath ? (
+                      <Link
+                        href={`${userLinkBasePath}/${u.userId}`}
+                        className="hover:underline"
+                      >
+                        {u.name ?? u.email}
+                      </Link>
+                    ) : (
+                      (u.name ?? u.email)
+                    )}
+                  </td>
                   <td className="px-4 py-3">{u.customRoleName ?? "—"}</td>
                   <td className="px-4 py-3">
                     {u.required === 0 ? (
@@ -182,7 +196,18 @@ export async function OrgDashboard({
                   key={u.userId}
                   className="border-b border-[hsl(var(--border))] last:border-0"
                 >
-                  <td className="px-4 py-3 font-medium">{u.name ?? u.email}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {userLinkBasePath ? (
+                      <Link
+                        href={`${userLinkBasePath}/${u.userId}`}
+                        className="hover:underline"
+                      >
+                        {u.name ?? u.email}
+                      </Link>
+                    ) : (
+                      (u.name ?? u.email)
+                    )}
+                  </td>
                   <td className="px-4 py-3">{u.customRoleName ?? "—"}</td>
                   <td className="px-4 py-3">
                     {u.required === 0 ? (
