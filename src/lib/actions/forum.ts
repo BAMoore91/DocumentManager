@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { notifyForumReply } from "@/lib/notifications";
 
 const topicSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -52,6 +53,9 @@ export async function deleteTopic(formData: FormData): Promise<void> {
     throw new Error("Forbidden");
   }
 
+  await prisma.notification.deleteMany({
+    where: { sourceId: id, type: "FORUM_REPLY" },
+  });
   await prisma.forumTopic.delete({ where: { id } });
   revalidatePath("/forum");
   redirect("/forum");
@@ -85,7 +89,7 @@ export async function createReply(formData: FormData): Promise<void> {
 
   const topic = await prisma.forumTopic.findUnique({
     where: { id: parsed.data.topicId },
-    select: { organizationId: true },
+    select: { organizationId: true, title: true },
   });
   if (!topic) throw new Error("Topic not found");
   if (topic.organizationId !== session.user.organizationId) throw new Error("Forbidden");
@@ -102,6 +106,13 @@ export async function createReply(formData: FormData): Promise<void> {
     where: { id: parsed.data.topicId },
     data: { updatedAt: new Date() },
   });
+
+  await notifyForumReply(
+    parsed.data.topicId,
+    topic.title,
+    session.user.id,
+    session.user.name ?? session.user.email ?? "Someone",
+  );
 
   revalidatePath("/forum");
   revalidatePath(`/forum/${parsed.data.topicId}`);

@@ -43,6 +43,7 @@ enum JhaStatus {
 
 enum NotificationType {
   TOOLBOX_TALK_ASSIGNED
+  FORUM_REPLY
 }
 
 model Organization {

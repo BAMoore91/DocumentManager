@@ -21,6 +21,42 @@ export async function notifyToolboxTalkAssigned(
   });
 }
 
+export async function notifyForumReply(
+  topicId: string,
+  topicTitle: string,
+  replyAuthorId: string,
+  replyAuthorName: string,
+) {
+  const [topic, prevReplies] = await Promise.all([
+    prisma.forumTopic.findUnique({
+      where: { id: topicId },
+      select: { authorId: true },
+    }),
+    prisma.forumReply.findMany({
+      where: { topicId, authorId: { not: replyAuthorId } },
+      select: { authorId: true },
+      distinct: ["authorId"],
+    }),
+  ]);
+  if (!topic) return;
+
+  const recipients = new Set<string>();
+  if (topic.authorId !== replyAuthorId) recipients.add(topic.authorId);
+  for (const r of prevReplies) recipients.add(r.authorId);
+  if (recipients.size === 0) return;
+
+  await prisma.notification.createMany({
+    data: Array.from(recipients).map((userId) => ({
+      userId,
+      type: "FORUM_REPLY" as const,
+      title: `New reply on "${topicTitle}"`,
+      body: `${replyAuthorName} replied`,
+      linkUrl: `/forum/${topicId}`,
+      sourceId: topicId,
+    })),
+  });
+}
+
 export async function expectedAttendeeIds(
   organizationId: string,
   roleIds: string[],
