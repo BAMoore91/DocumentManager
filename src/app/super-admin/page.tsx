@@ -1,16 +1,32 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getSuperAdminMetrics, getDocumentBuckets, getStorageByOrg } from "@/lib/metrics";
 import { MetricGrid } from "@/components/metric-grid";
 import { Card } from "@/components/ui/card";
 import { formatBytes } from "@/lib/utils";
 
+function formatDateTime(d: Date) {
+  return d.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default async function SuperAdminDashboard() {
-  const [m, storageByOrg, orgs] = await Promise.all([
+  const [m, storageByOrg, orgs, contactCount, recentContacts] = await Promise.all([
     getSuperAdminMetrics(),
     getStorageByOrg(),
     prisma.organization.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, _count: { select: { users: true, documents: true } } },
+    }),
+    prisma.contactSubmission.count(),
+    prisma.contactSubmission.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
     }),
   ]);
 
@@ -32,6 +48,7 @@ export default async function SuperAdminDashboard() {
           { label: "Users", value: m.totalUsers },
           { label: "Total Documents", value: m.total },
           { label: "Total Storage", value: formatBytes(m.totalStorageBytes) },
+          { label: "Contact requests", value: contactCount },
         ]}
       />
 
@@ -53,6 +70,56 @@ export default async function SuperAdminDashboard() {
             </div>
           </Card>
         </div>
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-end justify-between">
+          <h2 className="text-lg font-semibold">Recent contact requests</h2>
+          <Link
+            href="/super-admin/contact-submissions"
+            className="text-sm text-[hsl(var(--primary))] hover:underline"
+          >
+            View all →
+          </Link>
+        </div>
+        <Card className="overflow-x-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
+              <tr>
+                <th className="px-4 py-3">When</th>
+                <th className="px-4 py-3">Business</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Industry</th>
+                <th className="px-4 py-3">Users</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentContacts.map((c) => (
+                <tr key={c.id} className="border-b border-[hsl(var(--border))] last:border-0">
+                  <td className="px-4 py-3 whitespace-nowrap text-xs">
+                    {formatDateTime(c.createdAt)}
+                  </td>
+                  <td className="px-4 py-3 font-medium">{c.businessName}</td>
+                  <td className="px-4 py-3">
+                    {c.name}
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {c.email}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">{c.industry}</td>
+                  <td className="px-4 py-3 tabular-nums">{c.userCount}</td>
+                </tr>
+              ))}
+              {recentContacts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]">
+                    No contact requests yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </Card>
       </div>
 
       <div>

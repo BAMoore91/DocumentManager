@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 
 const schema = z.object({
@@ -69,4 +71,14 @@ export async function submitContact(formData: FormData): Promise<void> {
   }
 
   redirect("/?contact=success#contact");
+}
+
+export async function deleteContactSubmission(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (session?.user.role !== "SUPER_ADMIN") redirect("/login");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await prisma.contactSubmission.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/super-admin/contact-submissions");
+  revalidatePath("/super-admin");
 }
