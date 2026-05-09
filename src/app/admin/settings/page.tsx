@@ -10,6 +10,7 @@ import {
   FileText,
   BookOpen,
   MapPin,
+  GraduationCap,
 } from "lucide-react";
 
 const sections = [
@@ -32,6 +33,13 @@ const sections = [
     description:
       "Documents members must have on file, mapped to the roles they apply to.",
     icon: ClipboardCheck,
+  },
+  {
+    href: "/admin/settings/training",
+    title: "Training catalog",
+    description:
+      "Define training courses (OSHA-10, First Aid, Forklift...) and which roles they apply to.",
+    icon: GraduationCap,
   },
   {
     href: "/admin/settings/forms",

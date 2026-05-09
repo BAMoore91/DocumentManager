@@ -108,6 +108,8 @@ model Organization {
   incidents         Incident[]
   sites             Site[]
   correctiveActions CorrectiveAction[]
+  trainingCourses   TrainingCourse[]
+  trainingRecords   TrainingRecord[]
 }
 
 model User {
@@ -143,6 +145,8 @@ model User {
   capaCreated       CorrectiveAction[] @relation("CapaCreator")
   capaAssigned      CorrectiveAction[] @relation("CapaAssignee")
   capaVerified      CorrectiveAction[] @relation("CapaVerifier")
+  trainingRecords   TrainingRecord[]   @relation("TrainingRecordUser")
+  trainingRecorded  TrainingRecord[]   @relation("TrainingRecordedBy")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -187,6 +191,7 @@ model CustomRole {
   users                User[]
   requiredDocuments    RequiredDocument[]
   assignedToolboxTalks ToolboxTalk[]
+  trainingCourses      TrainingCourse[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -463,6 +468,52 @@ model CorrectiveAction {
   @@index([organizationId, status])
   @@index([assignedToId])
   @@index([sourceType, sourceId])
+}
+
+model TrainingCourse {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  name                String
+  description         String?
+  defaultValidityDays Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customRoles  CustomRole[]
+  records      TrainingRecord[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model TrainingRecord {
+  id              String   @id @default(cuid())
+  organizationId  String
+  userId          String
+  courseId        String
+  completedAt     DateTime
+  expiresAt       DateTime?
+  instructor      String?
+  provider        String?
+  certificateUrl  String?
+  certificateName String?
+  certificateSize Int?
+  hours           Float?
+  notes           String?
+  recordedById    String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User            @relation("TrainingRecordUser", fields: [userId], references: [id], onDelete: Cascade)
+  course       TrainingCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  recordedBy   User            @relation("TrainingRecordedBy", fields: [recordedById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([userId, courseId])
 }
 
 model Site {

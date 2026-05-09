@@ -96,6 +96,72 @@ export type RequirementStatus = {
   status: "missing" | "expired" | "expiring-soon" | "valid";
 };
 
+export type TrainingStatus = {
+  courseId: string;
+  name: string;
+  latestRecord: { id: string; completedAt: Date; expiresAt: Date | null; certificateUrl: string | null } | null;
+  status: "missing" | "expired" | "expiring-soon" | "valid";
+};
+
+export async function getUserTrainingStatus(userId: string): Promise<TrainingStatus[]> {
+  const today = startOfToday();
+  const in30 = new Date(today);
+  in30.setDate(in30.getDate() + 30);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      customRole: {
+        select: {
+          trainingCourses: {
+            orderBy: { name: "asc" },
+            select: { id: true, name: true },
+          },
+        },
+      },
+    },
+  });
+
+  const required = user?.customRole?.trainingCourses ?? [];
+  if (required.length === 0) return [];
+
+  const records = await prisma.trainingRecord.findMany({
+    where: {
+      userId,
+      courseId: { in: required.map((c) => c.id) },
+    },
+    orderBy: { completedAt: "desc" },
+    select: {
+      id: true,
+      courseId: true,
+      completedAt: true,
+      expiresAt: true,
+      certificateUrl: true,
+    },
+  });
+
+  const latestByCourse = new Map<string, (typeof records)[number]>();
+  for (const r of records) {
+    if (!latestByCourse.has(r.courseId)) latestByCourse.set(r.courseId, r);
+  }
+
+  return required.map((c) => {
+    const rec = latestByCourse.get(c.id) ?? null;
+    let status: TrainingStatus["status"] = "missing";
+    if (rec) {
+      if (rec.expiresAt && rec.expiresAt < today) status = "expired";
+      else if (rec.expiresAt && rec.expiresAt <= in30) status = "expiring-soon";
+      else status = "valid";
+    }
+    return {
+      courseId: c.id,
+      name: c.name,
+      latestRecord: rec,
+      status,
+    };
+  });
+}
+
 export async function getUserRequirementStatus(userId: string): Promise<RequirementStatus[]> {
   const today = startOfToday();
   const in30 = new Date(today);
