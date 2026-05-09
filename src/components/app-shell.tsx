@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, LogOut } from "lucide-react";
 import { logout } from "@/lib/actions/auth-actions";
+import { OnlineIndicator } from "@/components/online-indicator";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 
@@ -113,6 +114,7 @@ export function AppShell({
           </Link>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <OnlineIndicator />
           <div className="hidden text-right sm:block">
             <div className="font-medium">{email}</div>
             <div className="text-xs text-[hsl(var(--muted-foreground))]">
