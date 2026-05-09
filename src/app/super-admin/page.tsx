@@ -142,7 +142,14 @@ export default async function SuperAdminDashboard() {
             <tbody>
               {orgBuckets.map(({ org, b }) => (
                 <tr key={org.id} className="border-b border-[hsl(var(--border))] last:border-0">
-                  <td className="px-4 py-3 font-medium">{org.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link
+                      href={`/super-admin/organizations/${org.id}`}
+                      className="hover:underline"
+                    >
+                      {org.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">{org._count.users}</td>
                   <td className="px-4 py-3">{b.total}</td>
                   <td className="px-4 py-3 tabular-nums">

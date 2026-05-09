@@ -35,6 +35,7 @@ export default async function OrganizationDashboardPage({
         orgId={org.id}
         title={org.name}
         subtitle="Organization metrics and upcoming expirations."
+        userLinkBasePath="/super-admin/users"
       />
     </div>
   );

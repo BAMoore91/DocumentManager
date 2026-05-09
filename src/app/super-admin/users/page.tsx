@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -77,7 +78,14 @@ export default async function SuperAdminUsersPage() {
           <tbody>
             {activeUsers.map((u) => (
               <tr key={u.id} className="border-b border-[hsl(var(--border))] last:border-0">
-                <td className="px-4 py-3 font-medium">{u.name ?? "—"}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link
+                    href={`/super-admin/users/${u.id}`}
+                    className="hover:underline"
+                  >
+                    {u.name ?? "—"}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.role.replace("_", " ")}</td>
                 <td className="px-4 py-3">{u.organization?.name ?? "—"}</td>
@@ -116,7 +124,14 @@ export default async function SuperAdminUsersPage() {
                     key={u.id}
                     className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 last:border-0"
                   >
-                    <td className="px-4 py-3 font-medium">{u.name ?? "—"}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link
+                        href={`/super-admin/users/${u.id}`}
+                        className="hover:underline"
+                      >
+                        {u.name ?? "—"}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3">{u.email}</td>
                     <td className="px-4 py-3">{u.organization?.name ?? "—"}</td>
                     <td className="px-4 py-3">
