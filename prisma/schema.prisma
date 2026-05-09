@@ -28,6 +28,19 @@ enum FormFieldType {
   SELECT
 }
 
+enum JhaSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum JhaStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -43,6 +56,7 @@ model Organization {
   forms             Form[]
   forumTopics       ForumTopic[]
   kbArticles        KbArticle[]
+  jhaReports        JhaReport[]
 }
 
 model User {
@@ -69,6 +83,7 @@ model User {
   forumTopics       ForumTopic[]  @relation("ForumTopicAuthor")
   forumReplies      ForumReply[]  @relation("ForumReplyAuthor")
   kbArticles        KbArticle[]   @relation("KbArticleAuthor")
+  jhaReports        JhaReport[]   @relation("JhaReporter")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -266,6 +281,43 @@ model ForumReply {
 
   @@index([topicId])
   @@index([authorId])
+}
+
+model JhaReport {
+  id                String      @id @default(cuid())
+  title             String
+  location          String?
+  hazardDescription String
+  mitigation        String?
+  severity          JhaSeverity @default(MEDIUM)
+  status            JhaStatus   @default(OPEN)
+  organizationId    String
+  reportedById      String
+  resolvedAt        DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reportedBy   User         @relation("JhaReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+  photos       JhaPhoto[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model JhaPhoto {
+  id        String   @id @default(cuid())
+  jhaId     String
+  fileUrl   String
+  fileName  String
+  fileSize  Int
+  mimeType  String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  jha JhaReport @relation(fields: [jhaId], references: [id], onDelete: Cascade)
+
+  @@index([jhaId])
 }
 
 model KbArticle {
