@@ -61,6 +61,11 @@ enum IncidentStatus {
   CLOSED
 }
 
+enum SiteStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -79,6 +84,7 @@ model Organization {
   jhaReports        JhaReport[]
   sdsSheets         SdsSheet[]
   incidents         Incident[]
+  sites             Site[]
 }
 
 model User {
@@ -401,6 +407,30 @@ model IncidentPhoto {
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
+}
+
+model Site {
+  id               String     @id @default(cuid())
+  organizationId   String
+  name             String
+  code             String?
+  address          String?
+  status           SiteStatus @default(ACTIVE)
+  contactName      String?
+  contactPhone     String?
+  emergencyContact String?
+  musterPoint      String?
+  notes            String?
+  openedAt         DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([organizationId, status])
 }
 
 model Notification {

@@ -3,7 +3,14 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { ChevronRight, Tags, ClipboardCheck, FileText, BookOpen } from "lucide-react";
+import {
+  ChevronRight,
+  Tags,
+  ClipboardCheck,
+  FileText,
+  BookOpen,
+  MapPin,
+} from "lucide-react";
 
 const sections = [
   {
@@ -11,6 +18,13 @@ const sections = [
     title: "Custom roles",
     description: "Job titles within your organization (Foreman, Crew Leader, Safety Officer, etc.).",
     icon: Tags,
+  },
+  {
+    href: "/admin/settings/sites",
+    title: "Sites / Projects",
+    description:
+      "Define jobsites referenced by Equipment, Permits, Audits, and Pre-Task Plans.",
+    icon: MapPin,
   },
   {
     href: "/admin/settings/required-documents",
