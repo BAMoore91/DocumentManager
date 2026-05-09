@@ -165,15 +165,16 @@ model Organization {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
+  id             String    @id @default(cuid())
+  email          String    @unique
   name           String?
   passwordHash   String
-  role           Role     @default(USER)
+  role           Role      @default(USER)
   organizationId String?
   customRoleId   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  archivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customRole        CustomRole?   @relation(fields: [customRoleId], references: [id], onDelete: SetNull)

@@ -3,7 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormModal } from "@/components/form-modal";
-import { createUser, deleteUser } from "@/lib/actions/users";
+import { UserRemovalModal } from "@/components/user-removal-modal";
+import { createUser, restoreUser } from "@/lib/actions/users";
+import { formatDate } from "@/lib/utils";
 
 export default async function SuperAdminUsersPage() {
   const [orgs, users] = await Promise.all([
@@ -13,6 +15,9 @@ export default async function SuperAdminUsersPage() {
       include: { organization: true },
     }),
   ]);
+
+  const activeUsers = users.filter((u) => !u.archivedAt);
+  const archivedUsers = users.filter((u) => u.archivedAt);
 
   return (
     <div className="space-y-6">
@@ -70,25 +75,75 @@ export default async function SuperAdminUsersPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {activeUsers.map((u) => (
               <tr key={u.id} className="border-b border-[hsl(var(--border))] last:border-0">
                 <td className="px-4 py-3 font-medium">{u.name ?? "—"}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.role.replace("_", " ")}</td>
                 <td className="px-4 py-3">{u.organization?.name ?? "—"}</td>
                 <td className="px-4 py-3 text-right">
-                  <form action={deleteUser}>
-                    <input type="hidden" name="id" value={u.id} />
-                    <Button type="submit" variant="danger" size="sm">
-                      Delete
-                    </Button>
-                  </form>
+                  <UserRemovalModal
+                    userId={u.id}
+                    userName={u.name}
+                    userEmail={u.email}
+                  />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </Card>
+
+      {archivedUsers.length > 0 ? (
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">
+            Archived users ({archivedUsers.length})
+          </h2>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-sm">
+              <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
+                <tr>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Organization</th>
+                  <th className="px-4 py-3">Archived</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {archivedUsers.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]/30 last:border-0"
+                  >
+                    <td className="px-4 py-3 font-medium">{u.name ?? "—"}</td>
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">{u.organization?.name ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {u.archivedAt ? formatDate(u.archivedAt) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <form action={restoreUser}>
+                          <input type="hidden" name="id" value={u.id} />
+                          <Button type="submit" variant="secondary" size="sm">
+                            Restore
+                          </Button>
+                        </form>
+                        <UserRemovalModal
+                          userId={u.id}
+                          userName={u.name}
+                          userEmail={u.email}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -74,8 +74,36 @@ export async function createUser(formData: FormData): Promise<void> {
 export async function deleteUser(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
   const id = String(formData.get("id") ?? "");
+  const confirmEmail = String(formData.get("confirmEmail") ?? "")
+    .trim()
+    .toLowerCase();
   if (!id) throw new Error("Missing id");
   if (id === session.user.id) throw new Error("Cannot delete yourself");
+
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Not found");
+
+  if (confirmEmail !== target.email.toLowerCase()) {
+    throw new Error(
+      "Confirmation does not match the user's email — deletion cancelled.",
+    );
+  }
+
+  if (session.user.role === "ORG_ADMIN") {
+    if (target.organizationId !== session.user.organizationId) throw new Error("Forbidden");
+    if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
+  }
+
+  await prisma.user.delete({ where: { id } });
+  revalidatePath("/super-admin/users");
+  revalidatePath("/admin/users");
+}
+
+export async function archiveUser(formData: FormData): Promise<void> {
+  const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+  if (id === session.user.id) throw new Error("Cannot archive yourself");
 
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) throw new Error("Not found");
@@ -85,7 +113,31 @@ export async function deleteUser(formData: FormData): Promise<void> {
     if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
   }
 
-  await prisma.user.delete({ where: { id } });
+  await prisma.user.update({
+    where: { id },
+    data: { archivedAt: new Date() },
+  });
+  revalidatePath("/super-admin/users");
+  revalidatePath("/admin/users");
+}
+
+export async function restoreUser(formData: FormData): Promise<void> {
+  const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Not found");
+
+  if (session.user.role === "ORG_ADMIN") {
+    if (target.organizationId !== session.user.organizationId) throw new Error("Forbidden");
+    if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
+  }
+
+  await prisma.user.update({
+    where: { id },
+    data: { archivedAt: null },
+  });
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
 }
