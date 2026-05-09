@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { uploadDocument } from "@/lib/actions/documents";
 
 type User = { id: string; name: string | null; email: string };
@@ -97,9 +98,9 @@ export function SuperAdminDocumentForm({ organizations }: { organizations: Org[]
           <Textarea name="notes" placeholder="Optional notes" />
         </div>
         <div className="md:col-span-2">
-          <Button type="submit" disabled={users.length === 0}>
+          <SubmitButton pendingLabel="Uploading…" disabled={users.length === 0}>
             Upload
-          </Button>
+          </SubmitButton>
         </div>
       </form>
     </>

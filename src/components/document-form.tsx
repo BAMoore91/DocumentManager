@@ -1,5 +1,6 @@
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { uploadDocument } from "@/lib/actions/documents";
 
 type Owner = { id: string; name: string | null; email: string };
@@ -91,7 +92,7 @@ export function DocumentForm({
           <Textarea name="notes" placeholder="Optional notes" />
         </div>
       <div className="md:col-span-2">
-        <Button type="submit">Upload</Button>
+        <SubmitButton pendingLabel="Uploading…">Upload</SubmitButton>
       </div>
     </form>
   );

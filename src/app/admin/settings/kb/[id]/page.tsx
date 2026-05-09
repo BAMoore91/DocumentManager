@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import {
   deleteKbArticle,
   removeKbArticleFile,
@@ -110,7 +111,7 @@ export default async function KbEditPage({
               accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
             />
           </div>
-          <Button type="submit">Save changes</Button>
+          <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
         </form>
       </Card>
 

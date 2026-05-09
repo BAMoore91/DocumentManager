@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { createJhaReport } from "@/lib/actions/jha";
 
 export default async function NewJhaPage() {
@@ -109,7 +109,7 @@ export default async function NewJhaPage() {
               You can attach multiple images.
             </p>
           </div>
-          <Button type="submit">Submit report</Button>
+          <SubmitButton pendingLabel="Submitting…">Submit report</SubmitButton>
         </form>
       </Card>
     </div>

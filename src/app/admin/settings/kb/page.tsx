@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormModal } from "@/components/form-modal";
+import { SubmitButton } from "@/components/submit-button";
 import {
   createKbArticle,
   deleteKbArticle,
@@ -78,7 +79,7 @@ export default async function KbSettingsPage() {
                 accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
               />
             </div>
-            <Button type="submit">Create article</Button>
+            <SubmitButton pendingLabel="Uploading…">Create article</SubmitButton>
           </form>
         </FormModal>
       </div>

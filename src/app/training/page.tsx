@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { FormModal } from "@/components/form-modal";
 import { createTrainingRecord, deleteTrainingRecord } from "@/lib/actions/training";
 import { cn, formatBytes, formatDate } from "@/lib/utils";
@@ -113,7 +114,7 @@ export default async function TrainingPage() {
                 <Textarea id="notes" name="notes" maxLength={2000} />
               </div>
               <div className="md:col-span-2">
-                <Button type="submit">Save record</Button>
+                <SubmitButton pendingLabel="Saving…">Save record</SubmitButton>
               </div>
             </form>
           </FormModal>

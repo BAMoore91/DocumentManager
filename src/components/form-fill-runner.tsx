@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CloudOff } from "lucide-react";
+import { CloudOff, Loader2 } from "lucide-react";
 import { enqueue } from "@/lib/offline-queue";
 import { usePwa } from "@/components/pwa-provider";
 
@@ -256,7 +256,16 @@ export function FormFillRunner({
           }
         })}
         <Button type="submit" disabled={submitting}>
-          {submitting ? "Submitting…" : online ? "Submit" : "Save offline"}
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Submitting…
+            </>
+          ) : online ? (
+            "Submit"
+          ) : (
+            "Save offline"
+          )}
         </Button>
       </form>
     </Card>

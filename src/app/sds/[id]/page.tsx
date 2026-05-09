@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { deleteSdsSheet, updateSdsSheet } from "@/lib/actions/sds";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { FileText } from "lucide-react";
@@ -162,9 +163,9 @@ export default async function SdsDetailPage({
                 accept="application/pdf,image/*,.doc,.docx"
               />
             </div>
-            <Button type="submit" variant="secondary">
+            <SubmitButton variant="secondary" pendingLabel="Saving…">
               Save changes
-            </Button>
+            </SubmitButton>
           </form>
         </Card>
       ) : null}

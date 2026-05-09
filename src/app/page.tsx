@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { isSetupComplete } from "@/lib/actions/setup";
 import { submitContact } from "@/lib/actions/contact";
+import { SubmitButton } from "@/components/submit-button";
 import {
   Activity,
   AlertTriangle,
@@ -571,12 +572,9 @@ export default async function Home({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <button
-                    type="submit"
-                    className="inline-flex h-11 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-6 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
-                  >
+                  <SubmitButton pendingLabel="Sending…" className="h-11 px-6">
                     Send request
-                  </button>
+                  </SubmitButton>
                   <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
                     We'll only use this info to follow up about getting your
                     organization set up.

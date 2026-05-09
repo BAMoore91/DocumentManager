@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { createSdsSheet } from "@/lib/actions/sds";
 
 export default async function NewSdsPage() {
@@ -81,7 +81,7 @@ export default async function NewSdsPage() {
               accept="application/pdf,image/*,.doc,.docx"
             />
           </div>
-          <Button type="submit">Upload SDS</Button>
+          <SubmitButton pendingLabel="Uploading…">Upload SDS</SubmitButton>
         </form>
       </Card>
     </div>

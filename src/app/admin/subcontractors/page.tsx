@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { FormModal } from "@/components/form-modal";
 import {
   createSubcontractor,
@@ -85,7 +86,7 @@ export default async function SubcontractorsPage() {
             </label>
           </div>
           <div className="md:col-span-2">
-            <Button type="submit">Add subcontractor</Button>
+            <SubmitButton pendingLabel="Adding…">Add subcontractor</SubmitButton>
           </div>
           </form>
         </FormModal>
@@ -211,9 +212,9 @@ export default async function SubcontractorsPage() {
                     />
                     Prequalified
                   </label>
-                  <Button type="submit" variant="secondary" size="sm">
+                  <SubmitButton variant="secondary" size="sm" pendingLabel="Saving…">
                     Save
-                  </Button>
+                  </SubmitButton>
                 </div>
               </form>
             </div>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { IncidentTypeBadge, IncidentStatusBadge } from "@/components/incident-badges";
 import { PrintButton } from "@/components/print-button";
 import {
@@ -256,7 +257,7 @@ export default async function IncidentDetailPage({
                 required
               />
             </div>
-            <Button type="submit">Upload</Button>
+            <SubmitButton pendingLabel="Uploading…">Upload</SubmitButton>
           </form>
         </Card>
       ) : null}
@@ -421,9 +422,9 @@ export default async function IncidentDetailPage({
                 defaultValue={incident.correctiveActions ?? ""}
               />
             </div>
-            <Button type="submit" variant="secondary">
+            <SubmitButton variant="secondary" pendingLabel="Saving…">
               Save changes
-            </Button>
+            </SubmitButton>
           </form>
         </Card>
       ) : null}
