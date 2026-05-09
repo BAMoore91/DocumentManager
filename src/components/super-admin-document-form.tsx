@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { uploadDocument } from "@/lib/actions/documents";
@@ -22,18 +21,14 @@ export function SuperAdminDocumentForm({ organizations }: { organizations: Org[]
 
   if (organizations.length === 0) {
     return (
-      <Card>
-        <h2 className="mb-2 font-medium">Upload document</h2>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Create an organization with at least one user before uploading documents.
-        </p>
-      </Card>
+      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        Create an organization with at least one user before uploading documents.
+      </p>
     );
   }
 
   return (
-    <Card>
-      <h2 className="mb-3 font-medium">Upload document</h2>
+    <>
       <form
         action={uploadDocument}
         encType="multipart/form-data"
@@ -107,6 +102,6 @@ export function SuperAdminDocumentForm({ organizations }: { organizations: Org[]
           </Button>
         </div>
       </form>
-    </Card>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import {
   createTrainingCourse,
   deleteTrainingCourse,
@@ -41,62 +42,62 @@ export default async function TrainingCatalogPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Training catalog</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Define training courses your members must complete. Map each course to
-          the roles it applies to and set a default validity period for
-          auto-calculated expirations.
-        </p>
-      </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Add a course</h2>
-        <form action={createTrainingCourse} className="space-y-3">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label htmlFor="name">Course name</Label>
-            <Input id="name" name="name" required maxLength={120} placeholder="OSHA 10" />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" maxLength={2000} />
-          </div>
-          <div>
-            <Label htmlFor="defaultValidityDays">Default validity (days)</Label>
-            <Input
-              id="defaultValidityDays"
-              name="defaultValidityDays"
-              type="number"
-              min={0}
-              max={36500}
-              placeholder="e.g. 1825 for 5 years"
-            />
-            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-              Leave blank for no expiration.
-            </p>
-          </div>
-          {customRoles.length > 0 ? (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Training catalog</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Define training courses your members must complete. Map each course to
+            the roles it applies to and set a default validity period for
+            auto-calculated expirations.
+          </p>
+        </div>
+        <FormModal triggerLabel="Add course" title="Add training course">
+          <form action={createTrainingCourse} className="space-y-3">
+            <input type="hidden" name="organizationId" value={orgId} />
             <div>
-              <Label>Applies to roles</Label>
-              <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
-                {customRoles.map((r) => (
-                  <label key={r.id} className="inline-flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="customRoleIds"
-                      value={r.id}
-                      className="h-4 w-4"
-                    />
-                    {r.name}
-                  </label>
-                ))}
-              </div>
+              <Label htmlFor="name">Course name</Label>
+              <Input id="name" name="name" required maxLength={120} placeholder="OSHA 10" />
             </div>
-          ) : null}
-          <Button type="submit">Add course</Button>
-        </form>
-      </Card>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" name="description" maxLength={2000} />
+            </div>
+            <div>
+              <Label htmlFor="defaultValidityDays">Default validity (days)</Label>
+              <Input
+                id="defaultValidityDays"
+                name="defaultValidityDays"
+                type="number"
+                min={0}
+                max={36500}
+                placeholder="e.g. 1825 for 5 years"
+              />
+              <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                Leave blank for no expiration.
+              </p>
+            </div>
+            {customRoles.length > 0 ? (
+              <div>
+                <Label>Applies to roles</Label>
+                <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
+                  {customRoles.map((r) => (
+                    <label key={r.id} className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="customRoleIds"
+                        value={r.id}
+                        className="h-4 w-4"
+                      />
+                      {r.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <Button type="submit">Add course</Button>
+          </form>
+        </FormModal>
+      </div>
 
       <div className="space-y-3">
         {courses.map((c) => {

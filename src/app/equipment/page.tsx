@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createEquipment } from "@/lib/actions/equipment";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -48,55 +49,55 @@ export default async function EquipmentListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Equipment</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Inventory of forklifts, lifts, harnesses, ladders, and other equipment
-          requiring inspections.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Equipment</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Inventory of forklifts, lifts, harnesses, ladders, and other equipment
+            requiring inspections.
+          </p>
+        </div>
+        {isAdmin ? (
+          <FormModal triggerLabel="Add equipment" title="Add equipment" size="lg">
+            <form action={createEquipment} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" name="name" required maxLength={120} placeholder="Forklift #3" />
+              </div>
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Input id="type" name="type" maxLength={60} placeholder="Forklift" />
+              </div>
+              <div>
+                <Label htmlFor="serialNumber">Serial number</Label>
+                <Input id="serialNumber" name="serialNumber" maxLength={120} />
+              </div>
+              <div>
+                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Input id="manufacturer" name="manufacturer" maxLength={120} />
+              </div>
+              <div>
+                <Label htmlFor="siteId">Site (optional)</Label>
+                <Select id="siteId" name="siteId" defaultValue="">
+                  <option value="">— No site —</option>
+                  {sites.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea id="notes" name="notes" maxLength={2000} />
+              </div>
+              <div className="md:col-span-2">
+                <Button type="submit">Add equipment</Button>
+              </div>
+            </form>
+          </FormModal>
+        ) : null}
       </div>
-
-      {isAdmin ? (
-        <Card>
-          <h2 className="mb-3 font-medium">Add equipment</h2>
-          <form action={createEquipment} className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required maxLength={120} placeholder="Forklift #3" />
-            </div>
-            <div>
-              <Label htmlFor="type">Type</Label>
-              <Input id="type" name="type" maxLength={60} placeholder="Forklift" />
-            </div>
-            <div>
-              <Label htmlFor="serialNumber">Serial number</Label>
-              <Input id="serialNumber" name="serialNumber" maxLength={120} />
-            </div>
-            <div>
-              <Label htmlFor="manufacturer">Manufacturer</Label>
-              <Input id="manufacturer" name="manufacturer" maxLength={120} />
-            </div>
-            <div>
-              <Label htmlFor="siteId">Site (optional)</Label>
-              <Select id="siteId" name="siteId" defaultValue="">
-                <option value="">— No site —</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="md:col-span-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" name="notes" maxLength={2000} />
-            </div>
-            <div className="md:col-span-2">
-              <Button type="submit">Add equipment</Button>
-            </div>
-          </form>
-        </Card>
-      ) : null}
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">

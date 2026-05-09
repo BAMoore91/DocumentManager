@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createSite, deleteSite, setSiteStatus } from "@/lib/actions/sites";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -27,63 +28,63 @@ export default async function SitesSettingsPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Sites / Projects</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Define the jobsites or projects your crews work on. Sites can be
-          referenced by Equipment, Permits, Audits, and Pre-Task Plans.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Sites / Projects</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Define the jobsites or projects your crews work on. Sites can be
+            referenced by Equipment, Permits, Audits, and Pre-Task Plans.
+          </p>
+        </div>
+        <FormModal triggerLabel="Add site" title="Add a site" size="lg">
+          <form action={createSite} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" name="name" required maxLength={120} placeholder="South Tower" />
+            </div>
+            <div>
+              <Label htmlFor="code">Code (optional)</Label>
+              <Input id="code" name="code" maxLength={40} placeholder="ST-2026" />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="address">Address</Label>
+              <Input id="address" name="address" maxLength={300} />
+            </div>
+            <div>
+              <Label htmlFor="contactName">Site contact</Label>
+              <Input id="contactName" name="contactName" maxLength={120} />
+            </div>
+            <div>
+              <Label htmlFor="contactPhone">Contact phone</Label>
+              <Input id="contactPhone" name="contactPhone" maxLength={60} />
+            </div>
+            <div>
+              <Label htmlFor="emergencyContact">Emergency contact</Label>
+              <Input id="emergencyContact" name="emergencyContact" maxLength={300} />
+            </div>
+            <div>
+              <Label htmlFor="musterPoint">Muster point</Label>
+              <Input id="musterPoint" name="musterPoint" maxLength={300} />
+            </div>
+            <div>
+              <Label htmlFor="openedAt">Opened</Label>
+              <Input id="openedAt" name="openedAt" type="date" />
+            </div>
+            <div>
+              <Label htmlFor="closedAt">Closed (optional)</Label>
+              <Input id="closedAt" name="closedAt" type="date" />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" name="notes" maxLength={5000} />
+            </div>
+            <div className="md:col-span-2">
+              <Button type="submit">Add site</Button>
+            </div>
+          </form>
+        </FormModal>
       </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Add a site</h2>
-        <form action={createSite} className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" required maxLength={120} placeholder="South Tower" />
-          </div>
-          <div>
-            <Label htmlFor="code">Code (optional)</Label>
-            <Input id="code" name="code" maxLength={40} placeholder="ST-2026" />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="address">Address</Label>
-            <Input id="address" name="address" maxLength={300} />
-          </div>
-          <div>
-            <Label htmlFor="contactName">Site contact</Label>
-            <Input id="contactName" name="contactName" maxLength={120} />
-          </div>
-          <div>
-            <Label htmlFor="contactPhone">Contact phone</Label>
-            <Input id="contactPhone" name="contactPhone" maxLength={60} />
-          </div>
-          <div>
-            <Label htmlFor="emergencyContact">Emergency contact</Label>
-            <Input id="emergencyContact" name="emergencyContact" maxLength={300} />
-          </div>
-          <div>
-            <Label htmlFor="musterPoint">Muster point</Label>
-            <Input id="musterPoint" name="musterPoint" maxLength={300} />
-          </div>
-          <div>
-            <Label htmlFor="openedAt">Opened</Label>
-            <Input id="openedAt" name="openedAt" type="date" />
-          </div>
-          <div>
-            <Label htmlFor="closedAt">Closed (optional)</Label>
-            <Input id="closedAt" name="closedAt" type="date" />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" maxLength={5000} />
-          </div>
-          <div className="md:col-span-2">
-            <Button type="submit">Add site</Button>
-          </div>
-        </form>
-      </Card>
 
       <div className="space-y-2">
         {sites.map((s) => (

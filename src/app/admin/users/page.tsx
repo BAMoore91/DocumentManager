@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createUser, deleteUser } from "@/lib/actions/users";
 import { assignCustomRole } from "@/lib/actions/custom-roles";
 import { formatDate } from "@/lib/utils";
@@ -32,52 +33,52 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Organization Members</h1>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Add member</h2>
-        <form action={createUser} className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label>Name</Label>
-            <Input name="name" required />
-          </div>
-          <div>
-            <Label>Email</Label>
-            <Input name="email" type="email" required />
-          </div>
-          <div>
-            <Label>Password</Label>
-            <Input name="password" type="password" minLength={8} required />
-          </div>
-          <div>
-            <Label>System role</Label>
-            <Select name="role" required defaultValue="USER">
-              <option value="USER">User</option>
-              <option value="ORG_ADMIN">Org Admin</option>
-            </Select>
-          </div>
-          <div className="md:col-span-2">
-            <Label>Title (optional)</Label>
-            <Select name="customRoleId" defaultValue="">
-              <option value="">— None —</option>
-              {customRoles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
-            {customRoles.length === 0 ? (
-              <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                Add titles like Foreman or Crew Leader on the Settings page.
-              </p>
-            ) : null}
-          </div>
-          <div className="md:col-span-2">
-            <Button type="submit">Add member</Button>
-          </div>
-        </form>
-      </Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Organization Members</h1>
+        <FormModal triggerLabel="Add member" title="Add member" size="lg">
+          <form action={createUser} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label>Name</Label>
+              <Input name="name" required />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input name="email" type="email" required />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <Input name="password" type="password" minLength={8} required />
+            </div>
+            <div>
+              <Label>System role</Label>
+              <Select name="role" required defaultValue="USER">
+                <option value="USER">User</option>
+                <option value="ORG_ADMIN">Org Admin</option>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Title (optional)</Label>
+              <Select name="customRoleId" defaultValue="">
+                <option value="">— None —</option>
+                {customRoles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </Select>
+              {customRoles.length === 0 ? (
+                <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                  Add titles like Foreman or Crew Leader on the Settings page.
+                </p>
+              ) : null}
+            </div>
+            <div className="md:col-span-2">
+              <Button type="submit">Add member</Button>
+            </div>
+          </form>
+        </FormModal>
+      </div>
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">

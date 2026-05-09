@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createTopic } from "@/lib/actions/forum";
 import { formatDate } from "@/lib/utils";
 import { Pin } from "lucide-react";
@@ -25,35 +26,35 @@ export default async function ForumIndexPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Safety Forum</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Open discussion for your organization. Share questions, near-misses,
-          improvement ideas, or anything safety-related.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Safety Forum</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Open discussion for your organization. Share questions, near-misses,
+            improvement ideas, or anything safety-related.
+          </p>
+        </div>
+        <FormModal triggerLabel="New topic" title="Start a new topic">
+          <form action={createTopic} className="space-y-3">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" name="title" required maxLength={200} placeholder="Subject" />
+            </div>
+            <div>
+              <Label htmlFor="body">Message</Label>
+              <Textarea
+                id="body"
+                name="body"
+                required
+                maxLength={20000}
+                placeholder="Share what's on your mind…"
+                className="min-h-[120px]"
+              />
+            </div>
+            <Button type="submit">Post topic</Button>
+          </form>
+        </FormModal>
       </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Start a new topic</h2>
-        <form action={createTopic} className="space-y-3">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" required maxLength={200} placeholder="Subject" />
-          </div>
-          <div>
-            <Label htmlFor="body">Message</Label>
-            <Textarea
-              id="body"
-              name="body"
-              required
-              maxLength={20000}
-              placeholder="Share what's on your mind…"
-              className="min-h-[120px]"
-            />
-          </div>
-          <Button type="submit">Post topic</Button>
-        </form>
-      </Card>
 
       <div className="space-y-2">
         {topics.map((t) => (

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import {
   createKbArticle,
   deleteKbArticle,
@@ -32,55 +33,55 @@ export default async function KbSettingsPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Knowledge Base</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Publish reference articles for your members — policies, SOPs, training
-          materials. Save as draft, then publish to make it visible on the
-          Knowledge Base menu.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Knowledge Base</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Publish reference articles for your members — policies, SOPs, training
+            materials. Save as draft, then publish to make it visible on the
+            Knowledge Base menu.
+          </p>
+        </div>
+        <FormModal triggerLabel="New article" title="New article" size="lg">
+          <form
+            action={createKbArticle}
+            encType="multipart/form-data"
+            className="space-y-3"
+          >
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label htmlFor="kb-title">Title</Label>
+              <Input
+                id="kb-title"
+                name="title"
+                required
+                maxLength={200}
+                placeholder="Lockout / Tagout procedure"
+              />
+            </div>
+            <div>
+              <Label htmlFor="kb-body">Body</Label>
+              <Textarea
+                id="kb-body"
+                name="body"
+                maxLength={50000}
+                placeholder="Write the article here. Plain text — line breaks are preserved."
+                className="min-h-[160px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="kb-file">Attachment (optional, max 15 MB)</Label>
+              <Input
+                id="kb-file"
+                name="file"
+                type="file"
+                accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              />
+            </div>
+            <Button type="submit">Create article</Button>
+          </form>
+        </FormModal>
       </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">New article</h2>
-        <form
-          action={createKbArticle}
-          encType="multipart/form-data"
-          className="space-y-3"
-        >
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label htmlFor="kb-title">Title</Label>
-            <Input
-              id="kb-title"
-              name="title"
-              required
-              maxLength={200}
-              placeholder="Lockout / Tagout procedure"
-            />
-          </div>
-          <div>
-            <Label htmlFor="kb-body">Body</Label>
-            <Textarea
-              id="kb-body"
-              name="body"
-              maxLength={50000}
-              placeholder="Write the article here. Plain text — line breaks are preserved."
-              className="min-h-[160px]"
-            />
-          </div>
-          <div>
-            <Label htmlFor="kb-file">Attachment (optional, max 15 MB)</Label>
-            <Input
-              id="kb-file"
-              name="file"
-              type="file"
-              accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-            />
-          </div>
-          <Button type="submit">Create article</Button>
-        </form>
-      </Card>
 
       <div className="space-y-2">
         {articles.map((a) => (

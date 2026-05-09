@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createTrainingRecord, deleteTrainingRecord } from "@/lib/actions/training";
 import { cn, formatBytes, formatDate } from "@/lib/utils";
 
@@ -42,27 +43,17 @@ export default async function TrainingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Training records</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          {isAdmin
-            ? "Log course completions for members and track expirations."
-            : "Your completed training and expiration dates."}
-        </p>
-      </div>
-
-      {isAdmin ? (
-        <Card>
-          <h2 className="mb-3 font-medium">Log completion</h2>
-          {courses.length === 0 ? (
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Add at least one course in the{" "}
-              <Link href="/admin/settings/training" className="text-[hsl(var(--primary))] hover:underline">
-                Training catalog
-              </Link>{" "}
-              first.
-            </p>
-          ) : (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Training records</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            {isAdmin
+              ? "Log course completions for members and track expirations."
+              : "Your completed training and expiration dates."}
+          </p>
+        </div>
+        {isAdmin && courses.length > 0 ? (
+          <FormModal triggerLabel="Log completion" title="Log training completion" size="lg">
             <form
               action={createTrainingRecord}
               encType="multipart/form-data"
@@ -125,7 +116,18 @@ export default async function TrainingPage() {
                 <Button type="submit">Save record</Button>
               </div>
             </form>
-          )}
+          </FormModal>
+        ) : null}
+      </div>
+      {isAdmin && courses.length === 0 ? (
+        <Card>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Add at least one course in the{" "}
+            <Link href="/admin/settings/training" className="text-[hsl(var(--primary))] hover:underline">
+              Training catalog
+            </Link>{" "}
+            first.
+          </p>
         </Card>
       ) : null}
 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import {
   createRequiredDocument,
   deleteRequiredDocument,
@@ -41,17 +42,47 @@ export default async function RequiredDocumentsSettingsPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Required documents</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Define documents members must upload, and assign each one to the roles it
-          applies to. Members in those roles will see them as required on their
-          dashboard, and compliance is tracked per user and across the organization.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Required documents</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Define documents members must upload, and assign each one to the roles it
+            applies to. Members in those roles will see them as required on their
+            dashboard, and compliance is tracked per user and across the organization.
+          </p>
+        </div>
+        {customRoles.length > 0 ? (
+          <FormModal triggerLabel="Add required document" title="Add required document">
+            <form action={createRequiredDocument} className="space-y-3">
+              <input type="hidden" name="organizationId" value={orgId} />
+              <div>
+                <Label htmlFor="req-name">Document name</Label>
+                <Input id="req-name" name="name" required maxLength={100} placeholder="OSHA-10" />
+              </div>
+              <div>
+                <Label>Applies to roles</Label>
+                <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
+                  {customRoles.map((r) => (
+                    <label key={r.id} className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="customRoleIds"
+                        value={r.id}
+                        className="h-4 w-4"
+                      />
+                      {r.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Button type="submit">Add required document</Button>
+            </form>
+          </FormModal>
+        ) : null}
       </div>
 
-      <Card>
-        {customRoles.length === 0 ? (
+      {customRoles.length === 0 ? (
+        <Card>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Add at least one custom role under{" "}
             <Link href="/admin/settings/roles" className="text-[hsl(var(--primary))] hover:underline">
@@ -59,34 +90,11 @@ export default async function RequiredDocumentsSettingsPage() {
             </Link>{" "}
             before defining required documents.
           </p>
-        ) : (
-          <form action={createRequiredDocument} className="space-y-3">
-            <input type="hidden" name="organizationId" value={orgId} />
-            <div>
-              <Label htmlFor="req-name">Document name</Label>
-              <Input id="req-name" name="name" required maxLength={100} placeholder="OSHA-10" />
-            </div>
-            <div>
-              <Label>Applies to roles</Label>
-              <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
-                {customRoles.map((r) => (
-                  <label key={r.id} className="inline-flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="customRoleIds"
-                      value={r.id}
-                      className="h-4 w-4"
-                    />
-                    {r.name}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <Button type="submit">Add required document</Button>
-          </form>
-        )}
+        </Card>
+      ) : null}
 
-        <div className="mt-6 space-y-3">
+      <Card>
+        <div className="space-y-3">
           {requiredDocs.map((rd) => {
             const assignedIds = new Set(rd.customRoles.map((r) => r.id));
             return (

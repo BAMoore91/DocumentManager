@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createAudit } from "@/lib/actions/audits";
 import { formatDate } from "@/lib/utils";
 
@@ -38,17 +39,16 @@ export default async function AuditsListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Safety Audits</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Periodic walkthroughs and inspections. Capture findings here, then
-          spawn corrective actions for any issues that need follow-up.
-        </p>
-      </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">New audit</h2>
-        <form action={createAudit} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Safety Audits</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Periodic walkthroughs and inspections. Capture findings here, then
+            spawn corrective actions for any issues that need follow-up.
+          </p>
+        </div>
+        <FormModal triggerLabel="New audit" title="New audit" size="lg">
+          <form action={createAudit} className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <Label htmlFor="title">Title</Label>
             <Input id="title" name="title" required maxLength={200} placeholder="Q2 site walk" />
@@ -106,8 +106,9 @@ export default async function AuditsListPage() {
           <div className="md:col-span-2">
             <Button type="submit">Create audit</Button>
           </div>
-        </form>
-      </Card>
+          </form>
+        </FormModal>
+      </div>
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">

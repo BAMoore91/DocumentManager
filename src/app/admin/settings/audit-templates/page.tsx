@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import {
   createAuditTemplate,
   deleteAuditTemplate,
@@ -30,30 +31,30 @@ export default async function AuditTemplatesPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Audit templates</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Define reusable checklists (e.g. weekly site walk) so audits start
-          with the right items. Each item is recorded as PASS / FAIL / N/A on
-          the audit.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Audit templates</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Define reusable checklists (e.g. weekly site walk) so audits start
+            with the right items. Each item is recorded as PASS / FAIL / N/A on
+            the audit.
+          </p>
+        </div>
+        <FormModal triggerLabel="New template" title="New audit template">
+          <form action={createAuditTemplate} className="space-y-3">
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label>Name</Label>
+              <Input name="name" required maxLength={120} placeholder="Weekly site walk" />
+            </div>
+            <div>
+              <Label>Description (optional)</Label>
+              <Textarea name="description" maxLength={2000} />
+            </div>
+            <Button type="submit">Create</Button>
+          </form>
+        </FormModal>
       </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">New template</h2>
-        <form action={createAuditTemplate} className="space-y-3">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label>Name</Label>
-            <Input name="name" required maxLength={120} placeholder="Weekly site walk" />
-          </div>
-          <div>
-            <Label>Description (optional)</Label>
-            <Textarea name="description" maxLength={2000} />
-          </div>
-          <Button type="submit">Create</Button>
-        </form>
-      </Card>
 
       <div className="space-y-2">
         {templates.map((t) => (

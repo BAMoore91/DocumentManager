@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createOrganization, deleteOrganization } from "@/lib/actions/organizations";
 import { formatDate } from "@/lib/utils";
 
@@ -14,18 +15,18 @@ export default async function OrganizationsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Organizations</h1>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Create organization</h2>
-        <form action={createOrganization} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" required minLength={2} placeholder="Acme Inc." />
-          </div>
-          <Button type="submit">Create</Button>
-        </form>
-      </Card>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Organizations</h1>
+        <FormModal triggerLabel="Create organization" title="Create organization">
+          <form action={createOrganization} className="space-y-3">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" name="name" required minLength={2} placeholder="Acme Inc." />
+            </div>
+            <Button type="submit">Create</Button>
+          </form>
+        </FormModal>
+      </div>
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createForm, deleteForm, setFormStatus } from "@/lib/actions/forms";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -28,41 +29,41 @@ export default async function FormsSettingsPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Forms</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Build custom fillable forms for your members — daily checklists, incident
-          reports, sign-offs, etc. Save as a draft, add fields, then publish so users
-          can fill them from the Forms menu.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Forms</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Build custom fillable forms for your members — daily checklists, incident
+            reports, sign-offs, etc. Save as a draft, add fields, then publish so users
+            can fill them from the Forms menu.
+          </p>
+        </div>
+        <FormModal triggerLabel="Create form" title="Create a form">
+          <form action={createForm} className="space-y-3">
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label htmlFor="form-name">Form name</Label>
+              <Input
+                id="form-name"
+                name="name"
+                required
+                maxLength={120}
+                placeholder="Daily safety checklist"
+              />
+            </div>
+            <div>
+              <Label htmlFor="form-description">Description (optional)</Label>
+              <Textarea
+                id="form-description"
+                name="description"
+                maxLength={2000}
+                placeholder="What this form is for"
+              />
+            </div>
+            <Button type="submit">Create form</Button>
+          </form>
+        </FormModal>
       </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Create a form</h2>
-        <form action={createForm} className="space-y-3">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div>
-            <Label htmlFor="form-name">Form name</Label>
-            <Input
-              id="form-name"
-              name="name"
-              required
-              maxLength={120}
-              placeholder="Daily safety checklist"
-            />
-          </div>
-          <div>
-            <Label htmlFor="form-description">Description (optional)</Label>
-            <Textarea
-              id="form-description"
-              name="description"
-              maxLength={2000}
-              placeholder="What this form is for"
-            />
-          </div>
-          <Button type="submit">Create form</Button>
-        </form>
-      </Card>
 
       <div className="space-y-2">
         {forms.map((f) => (

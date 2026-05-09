@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createToolboxTalk, deleteToolboxTalk } from "@/lib/actions/toolbox-talks";
 import { formatDate } from "@/lib/utils";
 
@@ -49,24 +50,19 @@ export default async function ToolboxTalksPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Toolbox Talks</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Log safety talks and track attendance for your crew.
-        </p>
-      </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Schedule a talk</h2>
-        {presenters.length === 0 ? (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Toolbox Talks</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Add at least one member on the Users page before scheduling a talk.
+            Log safety talks and track attendance for your crew.
           </p>
-        ) : (
-          <form
-            action={createToolboxTalk}
-            className="grid grid-cols-1 gap-3 md:grid-cols-2"
-          >
+        </div>
+        {presenters.length > 0 ? (
+          <FormModal triggerLabel="Schedule talk" title="Schedule a talk" size="lg">
+            <form
+              action={createToolboxTalk}
+              className="grid grid-cols-1 gap-3 md:grid-cols-2"
+            >
             <input type="hidden" name="organizationId" value={orgId} />
             <div>
               <Label>Topic</Label>
@@ -156,9 +152,17 @@ export default async function ToolboxTalksPage() {
             <div className="md:col-span-2">
               <Button type="submit">Create talk</Button>
             </div>
-          </form>
-        )}
-      </Card>
+            </form>
+          </FormModal>
+        ) : null}
+      </div>
+      {presenters.length === 0 ? (
+        <Card>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Add at least one member on the Users page before scheduling a talk.
+          </p>
+        </Card>
+      ) : null}
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">

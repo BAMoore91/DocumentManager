@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import {
   createSubcontractor,
   deleteSubcontractor,
@@ -27,20 +28,19 @@ export default async function SubcontractorsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Subcontractors</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Track subs, their insurance certificates, and prequalification status.
-        </p>
-      </div>
-
-      <Card>
-        <h2 className="mb-3 font-medium">Add subcontractor</h2>
-        <form
-          action={createSubcontractor}
-          encType="multipart/form-data"
-          className="grid grid-cols-1 gap-3 md:grid-cols-2"
-        >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Subcontractors</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Track subs, their insurance certificates, and prequalification status.
+          </p>
+        </div>
+        <FormModal triggerLabel="Add subcontractor" title="Add subcontractor" size="lg">
+          <form
+            action={createSubcontractor}
+            encType="multipart/form-data"
+            className="grid grid-cols-1 gap-3 md:grid-cols-2"
+          >
           <div>
             <Label htmlFor="name">Company name</Label>
             <Input id="name" name="name" required maxLength={200} />
@@ -87,8 +87,9 @@ export default async function SubcontractorsPage() {
           <div className="md:col-span-2">
             <Button type="submit">Add subcontractor</Button>
           </div>
-        </form>
-      </Card>
+          </form>
+        </FormModal>
+      </div>
 
       <div className="space-y-3">
         {subs.map((s) => {

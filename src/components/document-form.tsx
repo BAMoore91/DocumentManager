@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { uploadDocument } from "@/lib/actions/documents";
@@ -19,9 +18,7 @@ export function DocumentForm({
   sites?: SiteOption[];
 }) {
   return (
-    <Card>
-      <h2 className="mb-3 font-medium">Upload document</h2>
-      <form action={uploadDocument} encType="multipart/form-data" className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <form action={uploadDocument} encType="multipart/form-data" className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
           <Label>Document name</Label>
           <Input name="name" required placeholder="OSHA 30 Certificate" />
@@ -93,10 +90,9 @@ export function DocumentForm({
           <Label>Notes</Label>
           <Textarea name="notes" placeholder="Optional notes" />
         </div>
-        <div className="md:col-span-2">
-          <Button type="submit">Upload</Button>
-        </div>
-      </form>
-    </Card>
+      <div className="md:col-span-2">
+        <Button type="submit">Upload</Button>
+      </div>
+    </form>
   );
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FormModal } from "@/components/form-modal";
 import { createCustomRole, deleteCustomRole } from "@/lib/actions/custom-roles";
 
 export default async function RolesSettingsPage() {
@@ -27,26 +28,29 @@ export default async function RolesSettingsPage() {
         ← Settings
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">Custom roles</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Add job titles for your members (Foreman, Crew Leader, Safety Officer, etc.).
-          These are labels — they don't change what someone can do, which is controlled
-          by the system role (Org Admin or User).
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Custom roles</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Add job titles for your members (Foreman, Crew Leader, Safety Officer, etc.).
+            These are labels — they don't change what someone can do, which is controlled
+            by the system role (Org Admin or User).
+          </p>
+        </div>
+        <FormModal triggerLabel="Add role" title="Add custom role">
+          <form action={createCustomRole} className="space-y-3">
+            <input type="hidden" name="organizationId" value={orgId} />
+            <div>
+              <Label htmlFor="role-name">Role name</Label>
+              <Input id="role-name" name="name" required maxLength={60} placeholder="Foreman" />
+            </div>
+            <Button type="submit">Add role</Button>
+          </form>
+        </FormModal>
       </div>
 
       <Card>
-        <form action={createCustomRole} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <input type="hidden" name="organizationId" value={orgId} />
-          <div className="flex-1">
-            <Label htmlFor="role-name">Role name</Label>
-            <Input id="role-name" name="name" required maxLength={60} placeholder="Foreman" />
-          </div>
-          <Button type="submit">Add role</Button>
-        </form>
-
-        <div className="mt-6 divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+        <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
           {customRoles.map((r) => (
             <div
               key={r.id}
@@ -68,7 +72,7 @@ export default async function RolesSettingsPage() {
           ))}
           {customRoles.length === 0 ? (
             <div className="px-3 py-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              No custom roles yet — add one above.
+              No custom roles yet — use Add role to create one.
             </div>
           ) : null}
         </div>

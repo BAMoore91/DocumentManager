@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { DocumentForm } from "@/components/document-form";
 import { DocumentTable } from "@/components/document-table";
+import { FormModal } from "@/components/form-modal";
 
 export default async function MyDocumentsPage() {
   const session = await auth();
@@ -45,13 +46,17 @@ export default async function MyDocumentsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">My Documents</h1>
-      <DocumentForm
-        owners={[me]}
-        lockedOwnerId={me.id}
-        requiredDocuments={requiredDocuments}
-        sites={sites}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">My Documents</h1>
+        <FormModal triggerLabel="Upload document" title="Upload document" size="lg">
+          <DocumentForm
+            owners={[me]}
+            lockedOwnerId={me.id}
+            requiredDocuments={requiredDocuments}
+            sites={sites}
+          />
+        </FormModal>
+      </div>
       <DocumentTable docs={docs} />
     </div>
   );
