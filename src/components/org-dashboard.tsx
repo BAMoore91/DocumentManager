@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getOrgMetrics } from "@/lib/metrics";
-import { getOrgCompliance } from "@/lib/compliance";
+import { getOrgCompliance, getOrgTrainingCompliance } from "@/lib/compliance";
 import { MetricGrid } from "@/components/metric-grid";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ export async function OrgDashboard({
   title?: string;
   subtitle?: string;
 }) {
-  const [m, upcoming, compliance] = await Promise.all([
+  const [m, upcoming, compliance, trainingCompliance] = await Promise.all([
     getOrgMetrics(orgId),
     prisma.document.findMany({
       where: { organizationId: orgId },
@@ -24,6 +24,7 @@ export async function OrgDashboard({
       include: { owner: { select: { name: true, email: true } } },
     }),
     getOrgCompliance(orgId),
+    getOrgTrainingCompliance(orgId),
   ]);
 
   return (
@@ -54,7 +55,7 @@ export async function OrgDashboard({
       />
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Compliance</h2>
+        <h2 className="mb-3 text-lg font-semibold">Document compliance</h2>
         <MetricGrid
           metrics={[
             {
@@ -128,6 +129,95 @@ export async function OrgDashboard({
                 </tr>
               ))}
               {compliance.users.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-6 text-center text-[hsl(var(--muted-foreground))]"
+                  >
+                    No members yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">Training compliance</h2>
+        <MetricGrid
+          metrics={[
+            {
+              label: "Users in compliance",
+              value: `${trainingCompliance.compliancePercent}%`,
+              tone:
+                trainingCompliance.compliancePercent === 100
+                  ? "success"
+                  : trainingCompliance.compliancePercent >= 75
+                    ? "warning"
+                    : "danger",
+            },
+            {
+              label: "Trained users",
+              value: `${trainingCompliance.compliantUsers} / ${trainingCompliance.applicableUsers}`,
+            },
+            { label: "With training", value: trainingCompliance.applicableUsers },
+            { label: "Total members", value: trainingCompliance.totalUsers },
+          ]}
+        />
+
+        <Card className="mt-3 overflow-x-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
+              <tr>
+                <th className="px-4 py-3">User</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Required</th>
+                <th className="px-4 py-3">Compliance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trainingCompliance.users.map((u) => (
+                <tr
+                  key={u.userId}
+                  className="border-b border-[hsl(var(--border))] last:border-0"
+                >
+                  <td className="px-4 py-3 font-medium">{u.name ?? u.email}</td>
+                  <td className="px-4 py-3">{u.customRoleName ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    {u.required === 0 ? (
+                      <span className="text-[hsl(var(--muted-foreground))]">N/A</span>
+                    ) : (
+                      `${u.satisfied} / ${u.required}`
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.required === 0 ? (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        No required training
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-32 overflow-hidden rounded-full bg-[hsl(var(--muted))]">
+                          <div
+                            className={cn(
+                              "h-full",
+                              u.percent === 100
+                                ? "bg-emerald-500"
+                                : u.percent >= 75
+                                  ? "bg-amber-500"
+                                  : "bg-red-500",
+                            )}
+                            style={{ width: `${u.percent}%` }}
+                          />
+                        </div>
+                        <span className="text-xs tabular-nums">{u.percent}%</span>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {trainingCompliance.users.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}

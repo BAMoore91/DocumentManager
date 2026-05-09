@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getUserMetrics } from "@/lib/metrics";
-import { getUserRequirementStatus } from "@/lib/compliance";
+import { getUserRequirementStatus, getUserTrainingStatus } from "@/lib/compliance";
 import { MetricGrid } from "@/components/metric-grid";
 import { DocumentTable } from "@/components/document-table";
 import { Card } from "@/components/ui/card";
@@ -34,7 +34,7 @@ export async function UserDashboardContent({
   uploadHref?: string;
   complianceHeading?: string;
 }) {
-  const [m, upcoming, requirements] = await Promise.all([
+  const [m, upcoming, requirements, trainingStatuses] = await Promise.all([
     getUserMetrics(userId),
     prisma.document.findMany({
       where: { ownerId: userId },
@@ -42,6 +42,7 @@ export async function UserDashboardContent({
       take: 5,
     }),
     getUserRequirementStatus(userId),
+    getUserTrainingStatus(userId),
   ]);
 
   const satisfied = requirements.filter(
@@ -51,6 +52,14 @@ export async function UserDashboardContent({
     requirements.length === 0
       ? 100
       : Math.round((satisfied / requirements.length) * 100);
+
+  const trainingsSatisfied = trainingStatuses.filter(
+    (t) => t.status === "valid" || t.status === "expiring-soon",
+  ).length;
+  const trainingCompliancePercent =
+    trainingStatuses.length === 0
+      ? 100
+      : Math.round((trainingsSatisfied / trainingStatuses.length) * 100);
 
   return (
     <div className="space-y-8">
@@ -135,6 +144,81 @@ export async function UserDashboardContent({
                           className="text-[hsl(var(--primary))] hover:underline"
                         >
                           Upload →
+                        </Link>
+                      ) : (
+                        <span className="text-[hsl(var(--muted-foreground))]">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      ) : null}
+
+      {trainingStatuses.length > 0 ? (
+        <div>
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Required training</h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Courses this role requires completed and kept current.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
+                Training {complianceHeading.toLowerCase().replace(/^my /, "")}
+              </div>
+              <div className="text-2xl font-semibold tabular-nums">
+                {trainingCompliancePercent}%
+              </div>
+            </div>
+          </div>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-sm">
+              <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
+                <tr>
+                  <th className="px-4 py-3">Course</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Completed</th>
+                  <th className="px-4 py-3">Expires</th>
+                  <th className="px-4 py-3">Certificate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trainingStatuses.map((t) => (
+                  <tr
+                    key={t.courseId}
+                    className="border-b border-[hsl(var(--border))] last:border-0"
+                  >
+                    <td className="px-4 py-3 font-medium">{t.name}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                          statusStyles[t.status],
+                        )}
+                      >
+                        {statusLabels[t.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {t.latestRecord ? formatDate(t.latestRecord.completedAt) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {t.latestRecord?.expiresAt
+                        ? formatDate(t.latestRecord.expiresAt)
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {t.latestRecord?.certificateUrl ? (
+                        <Link
+                          href={t.latestRecord.certificateUrl}
+                          target="_blank"
+                          className="text-[hsl(var(--primary))] hover:underline"
+                        >
+                          Download
                         </Link>
                       ) : (
                         <span className="text-[hsl(var(--muted-foreground))]">—</span>

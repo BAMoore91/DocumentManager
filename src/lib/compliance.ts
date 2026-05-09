@@ -89,6 +89,77 @@ export async function getOrgCompliance(orgId: string): Promise<OrgCompliance> {
   };
 }
 
+export type OrgTrainingCompliance = {
+  users: UserCompliance[];
+  totalUsers: number;
+  applicableUsers: number;
+  compliantUsers: number;
+  compliancePercent: number;
+};
+
+export async function getOrgTrainingCompliance(
+  orgId: string,
+): Promise<OrgTrainingCompliance> {
+  const today = startOfToday();
+
+  const users = await prisma.user.findMany({
+    where: { organizationId: orgId },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      customRole: {
+        select: {
+          name: true,
+          trainingCourses: { select: { id: true } },
+        },
+      },
+      trainingRecords: {
+        where: { OR: [{ expiresAt: null }, { expiresAt: { gte: today } }] },
+        select: { courseId: true },
+      },
+    },
+  });
+
+  const list: UserCompliance[] = users.map((u) => {
+    const required = u.customRole?.trainingCourses.map((c) => c.id) ?? [];
+    const satisfied = new Set<string>();
+    for (const r of u.trainingRecords) {
+      if (required.includes(r.courseId)) satisfied.add(r.courseId);
+    }
+    const requiredCount = required.length;
+    const satisfiedCount = satisfied.size;
+    const percent =
+      requiredCount === 0 ? 100 : Math.round((satisfiedCount / requiredCount) * 100);
+    return {
+      userId: u.id,
+      name: u.name,
+      email: u.email,
+      customRoleName: u.customRole?.name ?? null,
+      required: requiredCount,
+      satisfied: satisfiedCount,
+      percent,
+      isCompliant: requiredCount === 0 || satisfiedCount === requiredCount,
+    };
+  });
+
+  const applicable = list.filter((u) => u.required > 0);
+  const compliantCount = applicable.filter((u) => u.isCompliant).length;
+  const compliancePercent =
+    applicable.length === 0
+      ? 100
+      : Math.round((compliantCount / applicable.length) * 100);
+
+  return {
+    users: list,
+    totalUsers: list.length,
+    applicableUsers: applicable.length,
+    compliantUsers: compliantCount,
+    compliancePercent,
+  };
+}
+
 export type RequirementStatus = {
   requiredDocumentId: string;
   name: string;
