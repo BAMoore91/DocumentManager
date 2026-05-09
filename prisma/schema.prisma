@@ -100,6 +100,34 @@ enum InspectionResult {
   FAIL_OUT_OF_SERVICE
 }
 
+enum PermitType {
+  HOT_WORK
+  CONFINED_SPACE
+  LOCKOUT_TAGOUT
+  WORKING_AT_HEIGHTS
+  ELECTRICAL
+  EXCAVATION
+  OTHER
+}
+
+enum PermitStatus {
+  DRAFT
+  ISSUED
+  EXPIRED
+  CLOSED
+}
+
+enum AuditStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PtpStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -123,6 +151,10 @@ model Organization {
   trainingCourses   TrainingCourse[]
   trainingRecords   TrainingRecord[]
   equipment         Equipment[]
+  permits           Permit[]
+  audits            Audit[]
+  preTaskPlans      PreTaskPlan[]
+  subcontractors    Subcontractor[]
 }
 
 model User {
@@ -161,6 +193,12 @@ model User {
   trainingRecords   TrainingRecord[]   @relation("TrainingRecordUser")
   trainingRecorded  TrainingRecord[]   @relation("TrainingRecordedBy")
   inspections       EquipmentInspection[] @relation("InspectionPerformer")
+  permitsIssued     Permit[]           @relation("PermitIssuer")
+  permitsReceived   Permit[]           @relation("PermitRecipient")
+  auditsConducted   Audit[]            @relation("AuditConductor")
+  ptpsCreated       PreTaskPlan[]      @relation("PtpCreator")
+  ptpAcknowledgements PtpAcknowledgement[] @relation("PtpAcker")
+  signatures        Signature[]        @relation("SignatureSigner")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -547,8 +585,11 @@ model Site {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   equipment    Equipment[]
+  permits      Permit[]
+  audits       Audit[]
+  preTaskPlans PreTaskPlan[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -654,4 +695,140 @@ model KbArticle {
 
   @@index([organizationId])
   @@index([organizationId, published])
+}
+
+model Permit {
+  id             String       @id @default(cuid())
+  organizationId String
+  type           PermitType
+  status         PermitStatus @default(DRAFT)
+  title          String
+  location       String?
+  description    String?
+  hazards        String?
+  controls       String?
+  validFrom      DateTime
+  validUntil     DateTime
+  issuedById     String
+  recipientId    String?
+  recipientName  String?
+  siteId         String?
+  closedAt       DateTime?
+  closedNotes    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issuedBy     User         @relation("PermitIssuer", fields: [issuedById], references: [id], onDelete: Cascade)
+  recipient    User?        @relation("PermitRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, validUntil])
+  @@index([siteId])
+}
+
+model Audit {
+  id              String      @id @default(cuid())
+  organizationId  String
+  title           String
+  conductedById   String
+  conductedAt     DateTime
+  siteId          String?
+  status          AuditStatus @default(IN_PROGRESS)
+  scoreNumerator  Int?
+  scoreDenominator Int?
+  findings        String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conductedBy  User         @relation("AuditConductor", fields: [conductedById], references: [id], onDelete: Cascade)
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, conductedAt])
+  @@index([siteId])
+}
+
+model PreTaskPlan {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  task           String
+  date           DateTime
+  siteId         String?
+  hazards        String
+  controls       String
+  ppe            String?
+  emergencyInfo  String?
+  status         PtpStatus @default(ACTIVE)
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy        User                 @relation("PtpCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  site             Site?                @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  acknowledgements PtpAcknowledgement[]
+
+  @@index([organizationId])
+  @@index([organizationId, date])
+  @@index([siteId])
+}
+
+model PtpAcknowledgement {
+  id              String   @id @default(cuid())
+  preTaskPlanId   String
+  userId          String
+  acknowledgedAt  DateTime @default(now())
+
+  preTaskPlan PreTaskPlan @relation(fields: [preTaskPlanId], references: [id], onDelete: Cascade)
+  user        User        @relation("PtpAcker", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([preTaskPlanId, userId])
+  @@index([preTaskPlanId])
+  @@index([userId])
+}
+
+model Subcontractor {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  contactName    String?
+  contactEmail   String?
+  contactPhone   String?
+  trade          String?
+  notes          String?
+  insuranceUrl   String?
+  insuranceName  String?
+  insuranceSize  Int?
+  insuranceExpiresAt DateTime?
+  prequalified   Boolean   @default(false)
+  prequalifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([organizationId, insuranceExpiresAt])
+}
+
+model Signature {
+  id             String   @id @default(cuid())
+  signerId       String
+  signerName     String
+  contextType    String   // e.g. "TOOLBOX_TALK_ATTENDANCE", "PERMIT_RECIPIENT", "PTP_ACKNOWLEDGEMENT"
+  contextId      String   // related record id
+  imageDataUrl   String   @db.Text  // base64 PNG of the captured signature
+  signedAt       DateTime @default(now())
+
+  signer User @relation("SignatureSigner", fields: [signerId], references: [id], onDelete: Cascade)
+
+  @@index([contextType, contextId])
+  @@index([signerId])
 }
