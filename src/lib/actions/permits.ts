@@ -122,6 +122,33 @@ export async function setPermitStatus(formData: FormData): Promise<void> {
   revalidatePath(`/permits/${id}`);
 }
 
+export async function acknowledgePermit(formData: FormData): Promise<void> {
+  const session = await requireAuth();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+
+  const permit = await prisma.permit.findUnique({ where: { id } });
+  if (!permit) throw new Error("Not found");
+  if (permit.organizationId !== session.user.organizationId) throw new Error("Forbidden");
+
+  const signatureDataUrl = String(formData.get("signature") ?? "");
+  if (!signatureDataUrl.startsWith("data:image/")) {
+    throw new Error("Provide a signature");
+  }
+
+  await prisma.signature.create({
+    data: {
+      signerId: session.user.id,
+      signerName: session.user.name ?? session.user.email ?? "Member",
+      contextType: "PERMIT_RECIPIENT",
+      contextId: permit.id,
+      imageDataUrl: signatureDataUrl,
+    },
+  });
+
+  revalidatePath(`/permits/${permit.id}`);
+}
+
 export async function deletePermit(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
   const id = String(formData.get("id") ?? "");

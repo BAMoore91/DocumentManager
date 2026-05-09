@@ -136,11 +136,24 @@ export async function acknowledgePtp(formData: FormData): Promise<void> {
   if (!ptp) throw new Error("Not found");
   if (ptp.organizationId !== session.user.organizationId) throw new Error("Forbidden");
 
-  await prisma.ptpAcknowledgement.upsert({
+  const ack = await prisma.ptpAcknowledgement.upsert({
     where: { preTaskPlanId_userId: { preTaskPlanId: ptp.id, userId: session.user.id } },
     update: {},
     create: { preTaskPlanId: ptp.id, userId: session.user.id },
   });
+
+  const signatureDataUrl = String(formData.get("signature") ?? "");
+  if (signatureDataUrl.startsWith("data:image/")) {
+    await prisma.signature.create({
+      data: {
+        signerId: session.user.id,
+        signerName: session.user.name ?? session.user.email ?? "Member",
+        contextType: "PTP_ACKNOWLEDGEMENT",
+        contextId: ack.id,
+        imageDataUrl: signatureDataUrl,
+      },
+    });
+  }
 
   revalidatePath(`/ptp/${ptp.id}`);
 }

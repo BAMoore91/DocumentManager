@@ -5,8 +5,13 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { deletePermit, setPermitStatus } from "@/lib/actions/permits";
+import {
+  acknowledgePermit,
+  deletePermit,
+  setPermitStatus,
+} from "@/lib/actions/permits";
 import { PrintButton } from "@/components/print-button";
+import { SignaturePad } from "@/components/signature-pad";
 import { cn, formatDate } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -37,15 +42,23 @@ export default async function PermitDetailPage({
   const isAdmin = session.user.role === "ORG_ADMIN";
   const { id } = await params;
 
-  const permit = await prisma.permit.findUnique({
-    where: { id },
-    include: {
-      issuedBy: { select: { name: true, email: true } },
-      recipient: { select: { name: true, email: true } },
-      site: { select: { name: true } },
-    },
-  });
+  const [permit, signatures] = await Promise.all([
+    prisma.permit.findUnique({
+      where: { id },
+      include: {
+        issuedBy: { select: { name: true, email: true } },
+        recipient: { select: { name: true, email: true } },
+        site: { select: { name: true } },
+      },
+    }),
+    prisma.signature.findMany({
+      where: { contextType: "PERMIT_RECIPIENT", contextId: id },
+      orderBy: { signedAt: "asc" },
+      select: { id: true, signerName: true, imageDataUrl: true, signedAt: true },
+    }),
+  ]);
   if (!permit || permit.organizationId !== orgId) notFound();
+  const mySigned = signatures.some((s) => s.signerName.toLowerCase() === (session.user.name ?? session.user.email ?? "").toLowerCase());
 
   return (
     <div className="space-y-6">
@@ -134,6 +147,49 @@ export default async function PermitDetailPage({
           <p className="whitespace-pre-wrap text-sm">{permit.closedNotes}</p>
         </Card>
       ) : null}
+
+      <Card>
+        <h2 className="mb-3 font-medium">Signatures ({signatures.length})</h2>
+        <div className="space-y-2">
+          {signatures.map((s) => (
+            <div
+              key={s.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2 text-sm"
+            >
+              <div>
+                <div className="font-medium">{s.signerName}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {formatDate(s.signedAt)}
+                </div>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={s.imageDataUrl}
+                alt={`signature by ${s.signerName}`}
+                className="h-10 rounded border border-[hsl(var(--border))] bg-white"
+              />
+            </div>
+          ))}
+          {signatures.length === 0 ? (
+            <p className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+              No signatures captured yet.
+            </p>
+          ) : null}
+        </div>
+
+        {permit.status === "ISSUED" && !mySigned ? (
+          <form action={acknowledgePermit} className="mt-4 space-y-3 print:hidden">
+            <input type="hidden" name="id" value={permit.id} />
+            <div>
+              <Label>Sign as recipient / acknowledger</Label>
+              <SignaturePad fieldName="signature" required />
+            </div>
+            <Button type="submit" size="sm">
+              Submit signature
+            </Button>
+          </form>
+        ) : null}
+      </Card>
 
       {isAdmin ? (
         <Card className="print:hidden">

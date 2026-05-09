@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions/ptp";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { PrintButton } from "@/components/print-button";
+import { SignaturePad } from "@/components/signature-pad";
 import { cn, formatDate } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -48,6 +49,16 @@ export default async function PtpDetailPage({
     }),
   ]);
   if (!ptp || ptp.organizationId !== orgId) notFound();
+
+  const ackIds = ptp.acknowledgements.map((a) => a.id);
+  const ackSignatures = ackIds.length
+    ? await prisma.signature.findMany({
+        where: { contextType: "PTP_ACKNOWLEDGEMENT", contextId: { in: ackIds } },
+        select: { contextId: true, imageDataUrl: true },
+      })
+    : [];
+  const sigByAck = new Map<string, string>();
+  for (const s of ackSignatures) sigByAck.set(s.contextId, s.imageDataUrl);
 
   const isAdmin = session.user.role === "ORG_ADMIN";
   const canEdit = isAdmin || ptp.createdBy.id === session.user.id;
@@ -139,27 +150,45 @@ export default async function PtpDetailPage({
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
               You acknowledged on {formatDate(myAck.acknowledgedAt)}
             </span>
-          ) : (
-            <form action={acknowledgePtp}>
-              <input type="hidden" name="id" value={ptp.id} />
-              <Button type="submit" size="sm">
-                I read & understood
-              </Button>
-            </form>
-          )}
+          ) : null}
         </div>
-        <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
-          {ptp.acknowledgements.map((a) => (
-            <div
-              key={a.id}
-              className="flex items-center justify-between px-3 py-2 text-sm"
-            >
-              <span>{a.user.name ?? a.user.email}</span>
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                {formatDate(a.acknowledgedAt)}
-              </span>
+        {!myAck ? (
+          <form action={acknowledgePtp} className="mb-4 space-y-3 print:hidden">
+            <input type="hidden" name="id" value={ptp.id} />
+            <div>
+              <Label>Sign to acknowledge</Label>
+              <SignaturePad fieldName="signature" />
             </div>
-          ))}
+            <Button type="submit" size="sm">
+              I read & understood
+            </Button>
+          </form>
+        ) : null}
+        <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+          {ptp.acknowledgements.map((a) => {
+            const sigUrl = sigByAck.get(a.id);
+            return (
+              <div
+                key={a.id}
+                className="flex items-center justify-between px-3 py-2 text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <span>{a.user.name ?? a.user.email}</span>
+                  {sigUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={sigUrl}
+                      alt="signature"
+                      className="h-10 rounded border border-[hsl(var(--border))] bg-white"
+                    />
+                  ) : null}
+                </div>
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  {formatDate(a.acknowledgedAt)}
+                </span>
+              </div>
+            );
+          })}
           {ptp.acknowledgements.length === 0 ? (
             <div className="px-3 py-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
               No acknowledgements yet.

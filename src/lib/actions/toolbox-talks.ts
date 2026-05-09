@@ -202,11 +202,24 @@ export async function addAttendee(formData: FormData): Promise<void> {
   }
   await assertOrgAccess(session.user.role, session.user.organizationId, talk.organizationId);
 
-  await prisma.toolboxTalkAttendance.upsert({
+  const attendance = await prisma.toolboxTalkAttendance.upsert({
     where: { talkId_userId: { talkId, userId } },
     update: {},
     create: { talkId, userId },
   });
+
+  const signatureDataUrl = String(formData.get("signature") ?? "");
+  if (signatureDataUrl.startsWith("data:image/")) {
+    await prisma.signature.create({
+      data: {
+        signerId: userId,
+        signerName: user.name ?? user.email,
+        contextType: "TOOLBOX_TALK_ATTENDANCE",
+        contextId: attendance.id,
+        imageDataUrl: signatureDataUrl,
+      },
+    });
+  }
 
   revalidatePath(`/admin/toolbox-talks/${talkId}`);
 }

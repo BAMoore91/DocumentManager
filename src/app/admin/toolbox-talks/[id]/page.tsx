@@ -11,6 +11,7 @@ import {
   setToolboxTalkAssignments,
 } from "@/lib/actions/toolbox-talks";
 import { PrintButton } from "@/components/print-button";
+import { SignaturePad } from "@/components/signature-pad";
 import { cn, formatDate } from "@/lib/utils";
 
 export default async function ToolboxTalkDetailPage({
@@ -59,6 +60,21 @@ export default async function ToolboxTalkDetailPage({
     for (const u of role.users) expectedIds.add(u.id);
   }
   for (const u of talk.assignedUsers) expectedIds.add(u.id);
+
+  const attendanceIdList = talk.attendances.map((a) => a.id);
+  const attendanceSignatures = attendanceIdList.length
+    ? await prisma.signature.findMany({
+        where: {
+          contextType: "TOOLBOX_TALK_ATTENDANCE",
+          contextId: { in: attendanceIdList },
+        },
+        select: { contextId: true, imageDataUrl: true, signedAt: true },
+      })
+    : [];
+  const sigByAttendance = new Map<string, { imageDataUrl: string; signedAt: Date }>();
+  for (const s of attendanceSignatures) {
+    sigByAttendance.set(s.contextId, { imageDataUrl: s.imageDataUrl, signedAt: s.signedAt });
+  }
 
   const expectedUsers =
     expectedIds.size === 0
@@ -238,9 +254,9 @@ export default async function ToolboxTalkDetailPage({
         </div>
 
         {candidates.length > 0 ? (
-          <form action={addAttendee} className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form action={addAttendee} className="mb-4 space-y-3">
             <input type="hidden" name="talkId" value={talk.id} />
-            <div className="flex-1">
+            <div>
               <Label>Add attendee</Label>
               <Select name="userId" required>
                 {candidates.map((u) => (
@@ -251,6 +267,10 @@ export default async function ToolboxTalkDetailPage({
                 ))}
               </Select>
             </div>
+            <div>
+              <Label>Signature (optional)</Label>
+              <SignaturePad fieldName="signature" />
+            </div>
             <Button type="submit">Add</Button>
           </form>
         ) : (
@@ -260,26 +280,39 @@ export default async function ToolboxTalkDetailPage({
         )}
 
         <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
-          {talk.attendances.map((a) => (
-            <div
-              key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm"
-            >
-              <div>
-                <div className="font-medium">{a.user.name ?? a.user.email}</div>
-                <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                  {a.user.email}
-                  {a.user.customRole?.name ? ` · ${a.user.customRole.name}` : ""}
+          {talk.attendances.map((a) => {
+            const sig = sigByAttendance.get(a.id);
+            return (
+              <div
+                key={a.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div>
+                    <div className="font-medium">{a.user.name ?? a.user.email}</div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {a.user.email}
+                      {a.user.customRole?.name ? ` · ${a.user.customRole.name}` : ""}
+                    </div>
+                  </div>
+                  {sig ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={sig.imageDataUrl}
+                      alt="signature"
+                      className="h-10 rounded border border-[hsl(var(--border))] bg-white"
+                    />
+                  ) : null}
                 </div>
+                <form action={removeAttendee} className="print:hidden">
+                  <input type="hidden" name="id" value={a.id} />
+                  <Button type="submit" variant="danger" size="sm">
+                    Remove
+                  </Button>
+                </form>
               </div>
-              <form action={removeAttendee}>
-                <input type="hidden" name="id" value={a.id} />
-                <Button type="submit" variant="danger" size="sm">
-                  Remove
-                </Button>
-              </form>
-            </div>
-          ))}
+            );
+          })}
           {talk.attendances.length === 0 ? (
             <div className="px-3 py-4 text-center text-sm text-[hsl(var(--muted-foreground))]">
               No attendees recorded yet.
