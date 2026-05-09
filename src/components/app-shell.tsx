@@ -1,6 +1,11 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { signOut } from "@/lib/auth";
-import { LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, LogOut } from "lucide-react";
+import { logout } from "@/lib/actions/auth-actions";
+import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 
 type NavItem = { href: string; label: string };
@@ -36,6 +41,16 @@ const navByRole: Record<Role, NavItem[]> = {
   ],
 };
 
+function pickActiveHref(items: NavItem[], pathname: string): string {
+  let active = "";
+  for (const item of items) {
+    if (pathname === item.href || pathname.startsWith(item.href + "/")) {
+      if (item.href.length > active.length) active = item.href;
+    }
+  }
+  return active;
+}
+
 export function AppShell({
   role,
   email,
@@ -48,63 +63,106 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const items = navByRole[role];
+  const pathname = usePathname();
+  const activeHref = pickActiveHref(items, pathname);
 
-  async function logout() {
-    "use server";
-    await signOut({ redirectTo: "/login" });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
+      setOpen(true);
+    }
+  }, []);
+
+  function closeOnMobile() {
+    if (typeof window !== "undefined" && !window.matchMedia("(min-width: 768px)").matches) {
+      setOpen(false);
+    }
   }
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="font-semibold">
-              DocManager
-            </Link>
-            <nav className="hidden gap-4 text-sm md:flex">
-              {items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <div className="hidden text-right md:block">
-              <div className="font-medium">{email}</div>
-              <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                {role.replace("_", " ")}
-                {orgName ? ` · ${orgName}` : ""}
-              </div>
-            </div>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm hover:bg-[hsl(var(--muted))]"
-              >
-                <LogOut className="h-4 w-4" /> Logout
-              </button>
-            </form>
-          </div>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className="rounded-md p-1.5 hover:bg-[hsl(var(--muted))]"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <Link href="/" className="font-semibold">
+            DocManager
+          </Link>
         </div>
-        <nav className="flex gap-4 overflow-x-auto px-4 pb-2 text-sm md:hidden">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+        <div className="flex items-center gap-3 text-sm">
+          <div className="hidden text-right sm:block">
+            <div className="font-medium">{email}</div>
+            <div className="text-xs text-[hsl(var(--muted-foreground))]">
+              {role.replace("_", " ")}
+              {orgName ? ` · ${orgName}` : ""}
+            </div>
+          </div>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm hover:bg-[hsl(var(--muted))]"
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </form>
+        </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+
+      <div
+        onClick={() => setOpen(false)}
+        className={cn(
+          "fixed inset-0 top-14 z-20 bg-black/40 transition-opacity md:hidden",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
+
+      <aside
+        aria-label="Primary navigation"
+        className={cn(
+          "fixed bottom-0 left-0 top-14 z-30 w-64 overflow-y-auto border-r border-[hsl(var(--border))] bg-[hsl(var(--card))] transition-transform duration-200",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <nav className="flex flex-col gap-0.5 p-3 text-sm">
+          {items.map((item) => {
+            const isActive = activeHref === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeOnMobile}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "rounded-md px-3 py-2 transition",
+                  isActive
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                    : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      <main
+        className={cn(
+          "transition-[margin] duration-200",
+          open ? "md:ml-64" : "ml-0",
+        )}
+      >
+        <div className="mx-auto max-w-7xl px-4 py-6">{children}</div>
+      </main>
     </div>
   );
 }
