@@ -941,3 +941,17 @@ model ContactSubmission {
 
   @@index([createdAt])
 }
+
+model SiteVisit {
+  id        String   @id @default(cuid())
+  sessionId String
+  path      String
+  referrer  String?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([path, createdAt])
+}

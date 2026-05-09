@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { isSetupComplete } from "@/lib/actions/setup";
 import { submitContact } from "@/lib/actions/contact";
 import { SubmitButton } from "@/components/submit-button";
+import { CookieConsent } from "@/components/cookie-consent";
 import {
   Activity,
   AlertTriangle,
@@ -596,6 +597,8 @@ export default async function Home({
           <div>Built for safety, training, and document compliance.</div>
         </div>
       </footer>
+
+      <CookieConsent trackPath="/" />
     </div>
   );
 }

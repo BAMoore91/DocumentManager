@@ -18,6 +18,7 @@ const navByRole: Record<Role, NavItem[]> = {
     { href: "/super-admin/users", label: "Users" },
     { href: "/super-admin/documents", label: "Documents" },
     { href: "/super-admin/contact-submissions", label: "Contact requests" },
+    { href: "/super-admin/site-activity", label: "Site activity" },
     { href: "/super-admin/logs", label: "Activity log" },
   ],
   ORG_ADMIN: [
