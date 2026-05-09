@@ -11,6 +11,7 @@ import {
   BookOpen,
   MapPin,
   GraduationCap,
+  ListChecks,
 } from "lucide-react";
 
 const sections = [
@@ -40,6 +41,13 @@ const sections = [
     description:
       "Define training courses (OSHA-10, First Aid, Forklift...) and which roles they apply to.",
     icon: GraduationCap,
+  },
+  {
+    href: "/admin/settings/audit-templates",
+    title: "Audit templates",
+    description:
+      "Pre-built checklists (e.g. 'Weekly site walk') so audits start with the right items.",
+    icon: ListChecks,
   },
   {
     href: "/admin/settings/forms",

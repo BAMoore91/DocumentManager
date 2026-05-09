@@ -122,6 +122,12 @@ enum AuditStatus {
   COMPLETED
 }
 
+enum AuditItemResult {
+  PASS
+  FAIL
+  NA
+}
+
 enum PtpStatus {
   DRAFT
   ACTIVE
@@ -155,6 +161,7 @@ model Organization {
   audits            Audit[]
   preTaskPlans      PreTaskPlan[]
   subcontractors    Subcontractor[]
+  auditTemplates    AuditTemplate[]
 }
 
 model User {
@@ -752,6 +759,7 @@ model Audit {
   conductedById   String
   conductedAt     DateTime
   siteId          String?
+  templateId      String?
   status          AuditStatus @default(IN_PROGRESS)
   scoreNumerator  Int?
   scoreDenominator Int?
@@ -760,13 +768,58 @@ model Audit {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  conductedBy  User         @relation("AuditConductor", fields: [conductedById], references: [id], onDelete: Cascade)
-  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conductedBy  User            @relation("AuditConductor", fields: [conductedById], references: [id], onDelete: Cascade)
+  site         Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  template     AuditTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  findingItems AuditFindingItem[]
 
   @@index([organizationId])
   @@index([organizationId, conductedAt])
   @@index([siteId])
+  @@index([templateId])
+}
+
+model AuditTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items        AuditTemplateItem[]
+  audits       Audit[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model AuditTemplateItem {
+  id         String @id @default(cuid())
+  templateId String
+  label      String
+  position   Int    @default(0)
+
+  template AuditTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([templateId, position])
+}
+
+model AuditFindingItem {
+  id        String           @id @default(cuid())
+  auditId   String
+  label     String
+  position  Int              @default(0)
+  result    AuditItemResult?
+  notes     String?
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([auditId])
+  @@index([auditId, position])
 }
 
 model PreTaskPlan {

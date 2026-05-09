@@ -50,6 +50,26 @@ export async function createAudit(formData: FormData): Promise<void> {
 
   const siteId = await resolveSiteId(session.user.organizationId, parsed.data.siteId);
 
+  const templateIdRaw = (formData.get("templateId") as string | null) || null;
+  let templateId: string | null = null;
+  let templateItems: { id: string; label: string; position: number }[] = [];
+  if (templateIdRaw) {
+    const tpl = await prisma.auditTemplate.findUnique({
+      where: { id: templateIdRaw },
+      include: {
+        items: {
+          orderBy: { position: "asc" },
+          select: { id: true, label: true, position: true },
+        },
+      },
+    });
+    if (!tpl || tpl.organizationId !== session.user.organizationId) {
+      throw new Error("Invalid template");
+    }
+    templateId = tpl.id;
+    templateItems = tpl.items;
+  }
+
   const created = await prisma.audit.create({
     data: {
       organizationId: session.user.organizationId,
@@ -57,6 +77,7 @@ export async function createAudit(formData: FormData): Promise<void> {
       conductedById: session.user.id,
       conductedAt: new Date(parsed.data.conductedAt),
       siteId,
+      templateId,
       scoreNumerator: parsed.data.scoreNumerator,
       scoreDenominator: parsed.data.scoreDenominator,
       findings: parsed.data.findings ?? null,
@@ -64,6 +85,16 @@ export async function createAudit(formData: FormData): Promise<void> {
     },
     select: { id: true },
   });
+
+  if (templateItems.length > 0) {
+    await prisma.auditFindingItem.createMany({
+      data: templateItems.map((it) => ({
+        auditId: created.id,
+        label: it.label,
+        position: it.position,
+      })),
+    });
+  }
 
   revalidatePath("/audits");
   redirect(`/audits/${created.id}`);

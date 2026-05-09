@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { deleteAudit, updateAudit } from "@/lib/actions/audits";
+import { recordAuditFinding } from "@/lib/actions/audit-templates";
 import { PrintButton } from "@/components/print-button";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 export default async function AuditDetailPage({
   params,
@@ -25,6 +26,8 @@ export default async function AuditDetailPage({
       include: {
         conductedBy: { select: { name: true, email: true } },
         site: { select: { id: true, name: true } },
+        template: { select: { name: true } },
+        findingItems: { orderBy: { position: "asc" } },
       },
     }),
     prisma.site.findMany({
@@ -74,6 +77,58 @@ export default async function AuditDetailPage({
           </form>
         </div>
       </div>
+
+      {audit.findingItems.length > 0 ? (
+        <Card>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-medium">
+              Checklist
+              {audit.template ? (
+                <span className="ml-2 text-sm font-normal text-[hsl(var(--muted-foreground))]">
+                  · {audit.template.name}
+                </span>
+              ) : null}
+            </h2>
+          </div>
+          <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+            {audit.findingItems.map((it, idx) => (
+              <form
+                key={it.id}
+                action={recordAuditFinding}
+                className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm"
+              >
+                <input type="hidden" name="itemId" value={it.id} />
+                <div className="min-w-0 flex-1">
+                  {idx + 1}. {it.label}
+                </div>
+                <select
+                  name="result"
+                  defaultValue={it.result ?? ""}
+                  className={cn(
+                    "h-8 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 text-xs",
+                    it.result === "PASS" && "text-emerald-700",
+                    it.result === "FAIL" && "text-red-700",
+                  )}
+                >
+                  <option value="">—</option>
+                  <option value="PASS">Pass</option>
+                  <option value="FAIL">Fail</option>
+                  <option value="NA">N/A</option>
+                </select>
+                <input
+                  name="notes"
+                  defaultValue={it.notes ?? ""}
+                  placeholder="Notes (optional)"
+                  className="h-8 w-48 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 text-xs"
+                />
+                <Button type="submit" variant="secondary" size="sm">
+                  Save
+                </Button>
+              </form>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       {audit.findings ? (
         <Card>

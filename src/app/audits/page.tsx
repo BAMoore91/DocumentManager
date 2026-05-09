@@ -13,7 +13,7 @@ export default async function AuditsListPage() {
   if (!session?.user.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  const [audits, sites] = await Promise.all([
+  const [audits, sites, templates] = await Promise.all([
     prisma.audit.findMany({
       where: { organizationId: orgId },
       orderBy: { conductedAt: "desc" },
@@ -26,6 +26,11 @@ export default async function AuditsListPage() {
       where: { organizationId: orgId, status: "ACTIVE" },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
+    }),
+    prisma.auditTemplate.findMany({
+      where: { organizationId: orgId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, _count: { select: { items: true } } },
     }),
   ]);
 
@@ -59,6 +64,17 @@ export default async function AuditsListPage() {
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="templateId">Template (optional)</Label>
+            <Select id="templateId" name="templateId" defaultValue="">
+              <option value="">— None —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t._count.items} items)
                 </option>
               ))}
             </Select>
