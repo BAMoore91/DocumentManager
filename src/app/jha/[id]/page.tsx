@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SeverityBadge, JhaStatusBadge } from "@/components/jha-badges";
+import { PrintButton } from "@/components/print-button";
 import {
   addJhaPhotos,
   deleteJhaReport,
@@ -60,7 +61,8 @@ export default async function JhaDetailPage({
             {report.resolvedAt ? ` · Resolved ${formatDate(report.resolvedAt)}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <PrintButton />
           {isAdmin ? (
             <form action={setJhaStatus} className="flex items-center gap-2">
               <input type="hidden" name="id" value={report.id} />

@@ -10,6 +10,7 @@ import {
   updatePreTaskPlan,
 } from "@/lib/actions/ptp";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { PrintButton } from "@/components/print-button";
 import { cn, formatDate } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -77,14 +78,17 @@ export default async function PtpDetailPage({
             {ptp.status}
           </span>
         </div>
-        {canEdit ? (
-          <form action={deletePreTaskPlan}>
-            <input type="hidden" name="id" value={ptp.id} />
-            <Button type="submit" variant="danger" size="sm">
-              Delete
-            </Button>
-          </form>
-        ) : null}
+        <div className="flex items-center gap-2 print:hidden">
+          <PrintButton />
+          {canEdit ? (
+            <form action={deletePreTaskPlan}>
+              <input type="hidden" name="id" value={ptp.id} />
+              <Button type="submit" variant="danger" size="sm">
+                Delete
+              </Button>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       <Card>
@@ -165,7 +169,7 @@ export default async function PtpDetailPage({
       </Card>
 
       {canEdit ? (
-        <Card>
+        <Card className="print:hidden">
           <h2 className="mb-3 font-medium">Edit plan</h2>
           <form action={updatePreTaskPlan} className="space-y-3">
             <input type="hidden" name="id" value={ptp.id} />

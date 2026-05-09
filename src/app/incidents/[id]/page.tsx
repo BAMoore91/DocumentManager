@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { IncidentTypeBadge, IncidentStatusBadge } from "@/components/incident-badges";
+import { PrintButton } from "@/components/print-button";
 import {
   addIncidentPhotos,
   deleteIncident,
@@ -82,7 +83,8 @@ export default async function IncidentDetailPage({
             {incident.closedAt ? ` · Closed ${formatDate(incident.closedAt)}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <PrintButton />
           {isAdmin ? (
             <form action={setIncidentStatus} className="flex items-center gap-2">
               <input type="hidden" name="id" value={incident.id} />
@@ -235,7 +237,7 @@ export default async function IncidentDetailPage({
       ) : null}
 
       {canEdit ? (
-        <Card>
+        <Card className="print:hidden">
           <h2 className="mb-3 font-medium">Add more photos</h2>
           <form
             action={addIncidentPhotos}
@@ -260,7 +262,7 @@ export default async function IncidentDetailPage({
       ) : null}
 
       {canEdit ? (
-        <Card>
+        <Card className="print:hidden">
           <h2 className="mb-3 font-medium">Edit report</h2>
           <form action={updateIncident} className="space-y-3">
             <input type="hidden" name="id" value={incident.id} />

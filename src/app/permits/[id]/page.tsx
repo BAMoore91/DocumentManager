@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { deletePermit, setPermitStatus } from "@/lib/actions/permits";
+import { PrintButton } from "@/components/print-button";
 import { cn, formatDate } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -85,14 +86,17 @@ export default async function PermitDetailPage({
               : permit.recipientName ?? "External / non-member"}
           </p>
         </div>
-        {isAdmin ? (
-          <form action={deletePermit}>
-            <input type="hidden" name="id" value={permit.id} />
-            <Button type="submit" variant="danger" size="sm">
-              Delete
-            </Button>
-          </form>
-        ) : null}
+        <div className="flex items-center gap-2 print:hidden">
+          <PrintButton />
+          {isAdmin ? (
+            <form action={deletePermit}>
+              <input type="hidden" name="id" value={permit.id} />
+              <Button type="submit" variant="danger" size="sm">
+                Delete
+              </Button>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       {permit.description ? (
@@ -132,7 +136,7 @@ export default async function PermitDetailPage({
       ) : null}
 
       {isAdmin ? (
-        <Card>
+        <Card className="print:hidden">
           <h2 className="mb-3 font-medium">Update status</h2>
           <form action={setPermitStatus} className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <input type="hidden" name="id" value={permit.id} />

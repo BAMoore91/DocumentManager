@@ -10,6 +10,7 @@ import {
   removeAttendee,
   setToolboxTalkAssignments,
 } from "@/lib/actions/toolbox-talks";
+import { PrintButton } from "@/components/print-button";
 import { cn, formatDate } from "@/lib/utils";
 
 export default async function ToolboxTalkDetailPage({
@@ -104,14 +105,17 @@ export default async function ToolboxTalkDetailPage({
         ← All toolbox talks
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold">{talk.topic}</h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          {formatDate(talk.date)} · Presented by{" "}
-          {talk.presenter.name ?? talk.presenter.email}
-          {talk.presenter.customRole?.name ? ` (${talk.presenter.customRole.name})` : ""}
-          {talk.location ? ` · ${talk.location}` : ""}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">{talk.topic}</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            {formatDate(talk.date)} · Presented by{" "}
+            {talk.presenter.name ?? talk.presenter.email}
+            {talk.presenter.customRole?.name ? ` (${talk.presenter.customRole.name})` : ""}
+            {talk.location ? ` · ${talk.location}` : ""}
+          </p>
+        </div>
+        <PrintButton />
       </div>
 
       {talk.notes ? (

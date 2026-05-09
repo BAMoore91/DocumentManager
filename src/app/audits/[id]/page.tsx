@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { deleteAudit, updateAudit } from "@/lib/actions/audits";
+import { PrintButton } from "@/components/print-button";
 import { formatDate } from "@/lib/utils";
 
 export default async function AuditDetailPage({
@@ -63,12 +64,15 @@ export default async function AuditDetailPage({
             </p>
           ) : null}
         </div>
-        <form action={deleteAudit}>
-          <input type="hidden" name="id" value={audit.id} />
-          <Button type="submit" variant="danger" size="sm">
-            Delete
-          </Button>
-        </form>
+        <div className="flex items-center gap-2 print:hidden">
+          <PrintButton />
+          <form action={deleteAudit}>
+            <input type="hidden" name="id" value={audit.id} />
+            <Button type="submit" variant="danger" size="sm">
+              Delete
+            </Button>
+          </form>
+        </div>
       </div>
 
       {audit.findings ? (
@@ -124,7 +128,7 @@ export default async function AuditDetailPage({
         </div>
       </Card>
 
-      <Card>
+      <Card className="print:hidden">
         <h2 className="mb-3 font-medium">Edit audit</h2>
         <form action={updateAudit} className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input type="hidden" name="id" value={audit.id} />

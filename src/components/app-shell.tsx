@@ -97,7 +97,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 print:hidden">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -143,7 +143,7 @@ export function AppShell({
       <aside
         aria-label="Primary navigation"
         className={cn(
-          "fixed bottom-0 left-0 top-14 z-30 w-64 overflow-y-auto border-r border-[hsl(var(--border))] bg-[hsl(var(--card))] transition-transform duration-200",
+          "fixed bottom-0 left-0 top-14 z-30 w-64 overflow-y-auto border-r border-[hsl(var(--border))] bg-[hsl(var(--card))] transition-transform duration-200 print:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -172,7 +172,7 @@ export function AppShell({
 
       <main
         className={cn(
-          "transition-[margin] duration-200",
+          "transition-[margin] duration-200 print:!ml-0",
           open ? "md:ml-64" : "ml-0",
         )}
       >
