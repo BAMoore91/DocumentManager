@@ -79,6 +79,7 @@ model User {
   presentedTalks    ToolboxTalk[] @relation("TalkPresenter")
   createdTalks      ToolboxTalk[] @relation("TalkCreator")
   talkAttendances   ToolboxTalkAttendance[] @relation("TalkAttendee")
+  assignedTalks     ToolboxTalk[] @relation("TalkAssignedUsers")
   createdForms      Form[]        @relation("FormCreator")
   formSubmissions   FormSubmission[] @relation("FormSubmitter")
   forumTopics       ForumTopic[]  @relation("ForumTopicAuthor")
@@ -126,9 +127,10 @@ model CustomRole {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  users             User[]
-  requiredDocuments RequiredDocument[]
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users                User[]
+  requiredDocuments    RequiredDocument[]
+  assignedToolboxTalks ToolboxTalk[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -178,10 +180,12 @@ model ToolboxTalk {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  presenter    User         @relation("TalkPresenter", fields: [presenterId], references: [id])
-  createdBy    User         @relation("TalkCreator", fields: [createdById], references: [id])
-  attendances  ToolboxTalkAttendance[]
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  presenter     User         @relation("TalkPresenter", fields: [presenterId], references: [id])
+  createdBy     User         @relation("TalkCreator", fields: [createdById], references: [id])
+  attendances   ToolboxTalkAttendance[]
+  assignedRoles CustomRole[]
+  assignedUsers User[]       @relation("TalkAssignedUsers")
 
   @@index([organizationId])
   @@index([date])

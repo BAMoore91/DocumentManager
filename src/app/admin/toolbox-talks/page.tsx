@@ -13,7 +13,7 @@ export default async function ToolboxTalksPage() {
   if (!session?.user.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  const [presenters, talks] = await Promise.all([
+  const [members, customRoles, talks] = await Promise.all([
     prisma.user.findMany({
       where: { organizationId: orgId },
       orderBy: [{ name: "asc" }, { email: "asc" }],
@@ -24,6 +24,11 @@ export default async function ToolboxTalksPage() {
         customRole: { select: { name: true } },
       },
     }),
+    prisma.customRole.findMany({
+      where: { organizationId: orgId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
     prisma.toolboxTalk.findMany({
       where: { organizationId: orgId },
       orderBy: { date: "desc" },
@@ -33,6 +38,7 @@ export default async function ToolboxTalksPage() {
       },
     }),
   ]);
+  const presenters = members;
 
   const todayInput = new Date().toISOString().slice(0, 10);
 
@@ -83,6 +89,53 @@ export default async function ToolboxTalksPage() {
             <div className="md:col-span-2">
               <Label>Notes / talking points (optional)</Label>
               <Textarea name="notes" maxLength={10000} placeholder="Key points covered" />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Assigned to roles (optional)</Label>
+              <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
+                {customRoles.length === 0 ? (
+                  <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No custom roles defined yet — add some under Settings → Custom roles.
+                  </span>
+                ) : (
+                  customRoles.map((r) => (
+                    <label key={r.id} className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        name="assignedRoleIds"
+                        value={r.id}
+                        className="h-4 w-4"
+                      />
+                      {r.name}
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Assigned to users (optional)</Label>
+              <div className="flex max-h-48 flex-wrap gap-3 overflow-y-auto rounded-md border border-[hsl(var(--border))] px-3 py-2">
+                {members.map((u) => (
+                  <label key={u.id} className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="assignedUserIds"
+                      value={u.id}
+                      className="h-4 w-4"
+                    />
+                    {u.name ?? u.email}
+                    {u.customRole?.name ? (
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        ({u.customRole.name})
+                      </span>
+                    ) : null}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                Assignments are the union of all selected roles' members and any
+                individuals you check.
+              </p>
             </div>
             <div className="md:col-span-2">
               <Button type="submit">Create talk</Button>

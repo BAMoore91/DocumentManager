@@ -5,8 +5,12 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Label, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { addAttendee, removeAttendee } from "@/lib/actions/toolbox-talks";
-import { formatDate } from "@/lib/utils";
+import {
+  addAttendee,
+  removeAttendee,
+  setToolboxTalkAssignments,
+} from "@/lib/actions/toolbox-talks";
+import { cn, formatDate } from "@/lib/utils";
 
 export default async function ToolboxTalkDetailPage({
   params,
@@ -35,24 +39,61 @@ export default async function ToolboxTalkDetailPage({
           },
         },
       },
+      assignedRoles: {
+        select: { id: true, name: true, users: { select: { id: true } } },
+        orderBy: { name: "asc" },
+      },
+      assignedUsers: {
+        select: { id: true },
+      },
     },
   });
   if (!talk || talk.organizationId !== orgId) notFound();
 
   const attendingIds = new Set(talk.attendances.map((a) => a.userId));
-  const candidates = await prisma.user.findMany({
-    where: {
-      organizationId: orgId,
-      id: { notIn: Array.from(attendingIds) },
-    },
-    orderBy: [{ name: "asc" }, { email: "asc" }],
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      customRole: { select: { name: true } },
-    },
-  });
+
+  // Compute expected attendee user IDs = union of (users in assigned roles) ∪ (assigned users)
+  const expectedIds = new Set<string>();
+  for (const role of talk.assignedRoles) {
+    for (const u of role.users) expectedIds.add(u.id);
+  }
+  for (const u of talk.assignedUsers) expectedIds.add(u.id);
+
+  const expectedUsers =
+    expectedIds.size === 0
+      ? []
+      : await prisma.user.findMany({
+          where: { id: { in: Array.from(expectedIds) }, organizationId: orgId },
+          orderBy: [{ name: "asc" }, { email: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            customRole: { select: { name: true } },
+          },
+        });
+
+  const [allMembers, allCustomRoles] = await Promise.all([
+    prisma.user.findMany({
+      where: { organizationId: orgId },
+      orderBy: [{ name: "asc" }, { email: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        customRole: { select: { name: true } },
+      },
+    }),
+    prisma.customRole.findMany({
+      where: { organizationId: orgId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  const candidates = allMembers.filter((m) => !attendingIds.has(m.id));
+  const assignedRoleIdSet = new Set(talk.assignedRoles.map((r) => r.id));
+  const assignedUserIdSet = new Set(talk.assignedUsers.map((u) => u.id));
 
   return (
     <div className="space-y-6">
@@ -79,6 +120,108 @@ export default async function ToolboxTalkDetailPage({
           <p className="whitespace-pre-wrap text-sm">{talk.notes}</p>
         </Card>
       ) : null}
+
+      <Card>
+        <h2 className="mb-3 font-medium">Assignments</h2>
+        <p className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
+          Pick the roles and individuals expected to attend this talk. Assignments
+          are the union of every selected role's members and any individual users
+          checked below.
+        </p>
+        <form action={setToolboxTalkAssignments} className="space-y-3">
+          <input type="hidden" name="id" value={talk.id} />
+          <div>
+            <Label className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
+              Roles
+            </Label>
+            <div className="flex flex-wrap gap-3 rounded-md border border-[hsl(var(--border))] px-3 py-2">
+              {allCustomRoles.length === 0 ? (
+                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                  No custom roles defined.
+                </span>
+              ) : (
+                allCustomRoles.map((r) => (
+                  <label key={r.id} className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="assignedRoleIds"
+                      value={r.id}
+                      defaultChecked={assignedRoleIdSet.has(r.id)}
+                      className="h-4 w-4"
+                    />
+                    {r.name}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs uppercase text-[hsl(var(--muted-foreground))]">
+              Individuals
+            </Label>
+            <div className="flex max-h-48 flex-wrap gap-3 overflow-y-auto rounded-md border border-[hsl(var(--border))] px-3 py-2">
+              {allMembers.map((u) => (
+                <label key={u.id} className="inline-flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="assignedUserIds"
+                    value={u.id}
+                    defaultChecked={assignedUserIdSet.has(u.id)}
+                    className="h-4 w-4"
+                  />
+                  {u.name ?? u.email}
+                  {u.customRole?.name ? (
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                      ({u.customRole.name})
+                    </span>
+                  ) : null}
+                </label>
+              ))}
+            </div>
+          </div>
+          <Button type="submit" variant="secondary" size="sm">
+            Save assignments
+          </Button>
+        </form>
+
+        {expectedUsers.length > 0 ? (
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-medium uppercase text-[hsl(var(--muted-foreground))]">
+              Expected attendees ({expectedUsers.length})
+            </h3>
+            <div className="divide-y divide-[hsl(var(--border))] rounded-md border border-[hsl(var(--border))]">
+              {expectedUsers.map((u) => {
+                const attended = attendingIds.has(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <span className="font-medium">{u.name ?? u.email}</span>
+                      {u.customRole?.name ? (
+                        <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
+                          {u.customRole.name}
+                        </span>
+                      ) : null}
+                    </div>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        attended
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                          : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]",
+                      )}
+                    >
+                      {attended ? "Attended" : "Not yet"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </Card>
 
       <Card>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

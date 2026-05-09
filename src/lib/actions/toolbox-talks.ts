@@ -20,6 +20,29 @@ async function assertOrgAccess(role: string, sessionOrgId: string | null, orgId:
   }
 }
 
+async function validateAssignmentIds(
+  organizationId: string,
+  roleIds: string[],
+  userIds: string[],
+) {
+  if (roleIds.length > 0) {
+    const found = await prisma.customRole.count({
+      where: { id: { in: roleIds }, organizationId },
+    });
+    if (found !== roleIds.length) {
+      throw new Error("One or more roles do not belong to this organization");
+    }
+  }
+  if (userIds.length > 0) {
+    const found = await prisma.user.count({
+      where: { id: { in: userIds }, organizationId },
+    });
+    if (found !== userIds.length) {
+      throw new Error("One or more users do not belong to this organization");
+    }
+  }
+}
+
 export async function createToolboxTalk(formData: FormData): Promise<void> {
   const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
 
@@ -41,6 +64,16 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
     throw new Error("Invalid presenter");
   }
 
+  const assignedRoleIds = formData
+    .getAll("assignedRoleIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  const assignedUserIds = formData
+    .getAll("assignedUserIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  await validateAssignmentIds(organizationId, assignedRoleIds, assignedUserIds);
+
   await prisma.toolboxTalk.create({
     data: {
       organizationId,
@@ -50,12 +83,44 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
       notes: notes ?? null,
       presenterId,
       createdById: session.user.id,
+      assignedRoles: { connect: assignedRoleIds.map((id) => ({ id })) },
+      assignedUsers: { connect: assignedUserIds.map((id) => ({ id })) },
     },
   });
 
   revalidatePath("/admin/toolbox-talks");
   revalidatePath("/admin/calendar");
   revalidatePath(`/super-admin/organizations/${organizationId}/calendar`);
+}
+
+export async function setToolboxTalkAssignments(formData: FormData): Promise<void> {
+  const session = await requireRole("SUPER_ADMIN", "ORG_ADMIN");
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("Missing id");
+
+  const talk = await prisma.toolboxTalk.findUnique({ where: { id } });
+  if (!talk) throw new Error("Not found");
+  await assertOrgAccess(session.user.role, session.user.organizationId, talk.organizationId);
+
+  const assignedRoleIds = formData
+    .getAll("assignedRoleIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  const assignedUserIds = formData
+    .getAll("assignedUserIds")
+    .map((v) => String(v))
+    .filter(Boolean);
+  await validateAssignmentIds(talk.organizationId, assignedRoleIds, assignedUserIds);
+
+  await prisma.toolboxTalk.update({
+    where: { id: talk.id },
+    data: {
+      assignedRoles: { set: assignedRoleIds.map((rid) => ({ id: rid })) },
+      assignedUsers: { set: assignedUserIds.map((uid) => ({ id: uid })) },
+    },
+  });
+
+  revalidatePath(`/admin/toolbox-talks/${talk.id}`);
 }
 
 export async function deleteToolboxTalk(formData: FormData): Promise<void> {
