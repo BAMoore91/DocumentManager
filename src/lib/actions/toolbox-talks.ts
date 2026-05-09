@@ -13,7 +13,15 @@ const createSchema = z.object({
   location: z.string().max(200).optional().nullable(),
   notes: z.string().max(10000).optional().nullable(),
   presenterId: z.string().min(1),
+  siteId: z.string().optional().nullable(),
 });
+
+async function resolveTalkSiteId(organizationId: string, siteIdRaw: string | null | undefined) {
+  if (!siteIdRaw) return null;
+  const site = await prisma.site.findUnique({ where: { id: siteIdRaw } });
+  if (!site || site.organizationId !== organizationId) throw new Error("Invalid site");
+  return site.id;
+}
 
 async function assertOrgAccess(role: string, sessionOrgId: string | null, orgId: string) {
   if (role === "ORG_ADMIN" && sessionOrgId !== orgId) {
@@ -54,6 +62,7 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
     location: formData.get("location") || null,
     notes: formData.get("notes") || null,
     presenterId: formData.get("presenterId"),
+    siteId: formData.get("siteId") || null,
   });
   if (!parsed.success) throw new Error("Invalid input");
   const { organizationId, topic, date, location, notes, presenterId } = parsed.data;
@@ -64,6 +73,8 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
   if (!presenter || presenter.organizationId !== organizationId) {
     throw new Error("Invalid presenter");
   }
+
+  const siteId = await resolveTalkSiteId(organizationId, parsed.data.siteId);
 
   const assignedRoleIds = formData
     .getAll("assignedRoleIds")
@@ -84,6 +95,7 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
       notes: notes ?? null,
       presenterId,
       createdById: session.user.id,
+      siteId,
       assignedRoles: { connect: assignedRoleIds.map((id) => ({ id })) },
       assignedUsers: { connect: assignedUserIds.map((id) => ({ id })) },
     },

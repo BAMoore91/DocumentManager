@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { Input, Label, Textarea } from "@/components/ui/input";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn, expirationStatus, formatDate } from "@/lib/utils";
 import type { ExpirationStatus } from "@/lib/utils";
@@ -98,7 +98,15 @@ export async function ExpirationCalendar({
   const showEvents = view === "all" || view === "events";
   const showTalks = view === "all" || view === "talks";
 
-  const [docs, gridEvents, monthEvents, gridTalks] = await Promise.all([
+  const sitesPromise = canManageEvents
+    ? prisma.site.findMany({
+        where: { organizationId: orgId, status: "ACTIVE" },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      })
+    : Promise.resolve([]);
+
+  const [docs, gridEvents, monthEvents, gridTalks, sites] = await Promise.all([
     showDocs
       ? prisma.document.findMany({
           where: {
@@ -137,6 +145,7 @@ export async function ExpirationCalendar({
           include: { presenter: { select: { name: true, email: true } } },
         })
       : Promise.resolve([]),
+    sitesPromise,
   ]);
 
   const docsByDay = new Map<string, typeof docs>();
@@ -336,6 +345,19 @@ export async function ExpirationCalendar({
               <Label>Date</Label>
               <Input name="date" type="date" required />
             </div>
+            {sites.length > 0 ? (
+              <div className="md:col-span-2">
+                <Label>Site (optional)</Label>
+                <Select name="siteId" defaultValue="">
+                  <option value="">— No site —</option>
+                  {sites.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <Label>Description (optional)</Label>
               <Textarea name="description" maxLength={2000} placeholder="Notes about the event" />

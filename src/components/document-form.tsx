@@ -5,15 +5,18 @@ import { uploadDocument } from "@/lib/actions/documents";
 
 type Owner = { id: string; name: string | null; email: string };
 type RequiredDoc = { id: string; name: string };
+type SiteOption = { id: string; name: string };
 
 export function DocumentForm({
   owners,
   lockedOwnerId,
   requiredDocuments = [],
+  sites = [],
 }: {
   owners: Owner[];
   lockedOwnerId?: string;
   requiredDocuments?: RequiredDoc[];
+  sites?: SiteOption[];
 }) {
   return (
     <Card>
@@ -54,6 +57,17 @@ export function DocumentForm({
               ))}
             </Select>
           )}
+        </div>
+        <div>
+          <Label>Site (optional)</Label>
+          <Select name="siteId" defaultValue="">
+            <option value="">— No site —</option>
+            {sites.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="md:col-span-2">
           <Label>Fulfills requirement (optional)</Label>

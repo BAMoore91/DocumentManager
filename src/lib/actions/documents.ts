@@ -15,6 +15,7 @@ const docSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
   ownerId: z.string().min(1),
   requiredDocumentId: z.string().optional().nullable(),
+  siteId: z.string().optional().nullable(),
 });
 
 export async function uploadDocument(formData: FormData): Promise<void> {
@@ -31,6 +32,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
     notes: formData.get("notes") ?? null,
     ownerId: formData.get("ownerId") ?? session.user.id,
     requiredDocumentId: (formData.get("requiredDocumentId") as string | null) || null,
+    siteId: (formData.get("siteId") as string | null) || null,
   });
   if (!parsed.success) throw new Error("Invalid input");
 
@@ -54,6 +56,15 @@ export async function uploadDocument(formData: FormData): Promise<void> {
       throw new Error("Invalid required document");
     }
     requiredDocumentId = req.id;
+  }
+
+  let siteId: string | null = null;
+  if (parsed.data.siteId) {
+    const site = await prisma.site.findUnique({ where: { id: parsed.data.siteId } });
+    if (!site || site.organizationId !== owner.organizationId) {
+      throw new Error("Invalid site");
+    }
+    siteId = site.id;
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -80,6 +91,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
       ownerId: owner.id,
       uploadedById: session.user.id,
       requiredDocumentId,
+      siteId,
     },
   });
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,11 @@ import { createJhaReport } from "@/lib/actions/jha";
 export default async function NewJhaPage() {
   const session = await auth();
   if (!session?.user.organizationId) redirect("/login");
+  const sites = await prisma.site.findMany({
+    where: { organizationId: session.user.organizationId, status: "ACTIVE" },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   return (
     <div className="space-y-6">
@@ -55,6 +61,17 @@ export default async function NewJhaPage() {
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
                 <option value="CRITICAL">Critical</option>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="siteId">Site (optional)</Label>
+              <Select id="siteId" name="siteId" defaultValue="">
+                <option value="">— No site —</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
               </Select>
             </div>
           </div>

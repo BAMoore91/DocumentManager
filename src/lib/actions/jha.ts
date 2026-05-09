@@ -18,7 +18,15 @@ const createSchema = z.object({
   hazardDescription: z.string().trim().min(1).max(10000),
   mitigation: z.string().max(10000).optional().nullable(),
   severity: z.enum(SEVERITIES),
+  siteId: z.string().optional().nullable(),
 });
+
+async function resolveJhaSiteId(organizationId: string, siteIdRaw: string | null | undefined) {
+  if (!siteIdRaw) return null;
+  const site = await prisma.site.findUnique({ where: { id: siteIdRaw } });
+  if (!site || site.organizationId !== organizationId) throw new Error("Invalid site");
+  return site.id;
+}
 
 async function uploadPhoto(file: File, organizationId: string, jhaId: string) {
   if (file.size > MAX_BYTES) throw new Error("Photo exceeds 15 MB limit");
@@ -67,10 +75,13 @@ export async function createJhaReport(formData: FormData): Promise<void> {
     hazardDescription: formData.get("hazardDescription"),
     mitigation: formData.get("mitigation") || null,
     severity: formData.get("severity") || "MEDIUM",
+    siteId: formData.get("siteId") || null,
   });
   if (!parsed.success) {
     throw new Error("Title, hazard description, and severity are required");
   }
+
+  const siteId = await resolveJhaSiteId(session.user.organizationId, parsed.data.siteId);
 
   const created = await prisma.jhaReport.create({
     data: {
@@ -81,6 +92,7 @@ export async function createJhaReport(formData: FormData): Promise<void> {
       severity: parsed.data.severity as JhaSeverity,
       organizationId: session.user.organizationId,
       reportedById: session.user.id,
+      siteId,
     },
     select: { id: true, organizationId: true },
   });
@@ -104,6 +116,7 @@ const updateSchema = z.object({
   hazardDescription: z.string().trim().min(1).max(10000),
   mitigation: z.string().max(10000).optional().nullable(),
   severity: z.enum(SEVERITIES),
+  siteId: z.string().optional().nullable(),
 });
 
 export async function updateJhaReport(formData: FormData): Promise<void> {
@@ -115,6 +128,7 @@ export async function updateJhaReport(formData: FormData): Promise<void> {
     hazardDescription: formData.get("hazardDescription"),
     mitigation: formData.get("mitigation") || null,
     severity: formData.get("severity") || "MEDIUM",
+    siteId: formData.get("siteId") || null,
   });
   if (!parsed.success) throw new Error("Invalid input");
 
@@ -125,6 +139,8 @@ export async function updateJhaReport(formData: FormData): Promise<void> {
     session.user.organizationId,
   );
 
+  const siteId = await resolveJhaSiteId(report.organizationId, parsed.data.siteId);
+
   await prisma.jhaReport.update({
     where: { id: report.id },
     data: {
@@ -133,6 +149,7 @@ export async function updateJhaReport(formData: FormData): Promise<void> {
       hazardDescription: parsed.data.hazardDescription,
       mitigation: parsed.data.mitigation ?? null,
       severity: parsed.data.severity as JhaSeverity,
+      siteId,
     },
   });
 

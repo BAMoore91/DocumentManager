@@ -13,7 +13,7 @@ export default async function ToolboxTalksPage() {
   if (!session?.user.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  const [members, customRoles, talks] = await Promise.all([
+  const [members, customRoles, sites, talks] = await Promise.all([
     prisma.user.findMany({
       where: { organizationId: orgId },
       orderBy: [{ name: "asc" }, { email: "asc" }],
@@ -26,6 +26,11 @@ export default async function ToolboxTalksPage() {
     }),
     prisma.customRole.findMany({
       where: { organizationId: orgId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.site.findMany({
+      where: { organizationId: orgId, status: "ACTIVE" },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
@@ -85,6 +90,17 @@ export default async function ToolboxTalksPage() {
             <div>
               <Label>Location (optional)</Label>
               <Input name="location" maxLength={200} placeholder="Job site / yard" />
+            </div>
+            <div>
+              <Label>Site (optional)</Label>
+              <Select name="siteId" defaultValue="">
+                <option value="">— No site —</option>
+                {sites.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="md:col-span-2">
               <Label>Notes / talking points (optional)</Label>

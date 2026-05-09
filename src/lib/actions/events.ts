@@ -10,6 +10,7 @@ const eventSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional().nullable(),
   date: z.string().min(1),
+  siteId: z.string().optional().nullable(),
 });
 
 export async function createEvent(formData: FormData): Promise<void> {
@@ -20,6 +21,7 @@ export async function createEvent(formData: FormData): Promise<void> {
     title: formData.get("title"),
     description: formData.get("description") ?? null,
     date: formData.get("date"),
+    siteId: formData.get("siteId") || null,
   });
   if (!parsed.success) throw new Error("Invalid input");
 
@@ -33,6 +35,13 @@ export async function createEvent(formData: FormData): Promise<void> {
     throw new Error("Forbidden");
   }
 
+  let siteId: string | null = null;
+  if (parsed.data.siteId) {
+    const site = await prisma.site.findUnique({ where: { id: parsed.data.siteId } });
+    if (!site || site.organizationId !== organizationId) throw new Error("Invalid site");
+    siteId = site.id;
+  }
+
   await prisma.calendarEvent.create({
     data: {
       organizationId,
@@ -40,6 +49,7 @@ export async function createEvent(formData: FormData): Promise<void> {
       description: description ?? null,
       date: new Date(date),
       createdById: session.user.id,
+      siteId,
     },
   });
 

@@ -27,10 +27,19 @@ export default async function MyDocumentsPage() {
   });
   if (!me) redirect("/login");
 
-  const docs = await prisma.document.findMany({
-    where: { ownerId: me.id },
-    orderBy: { expirationDate: "asc" },
-  });
+  const [docs, sites] = await Promise.all([
+    prisma.document.findMany({
+      where: { ownerId: me.id },
+      orderBy: { expirationDate: "asc" },
+    }),
+    me.organizationId
+      ? prisma.site.findMany({
+          where: { organizationId: me.organizationId, status: "ACTIVE" },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const requiredDocuments = me.customRole?.requiredDocuments ?? [];
 
@@ -41,6 +50,7 @@ export default async function MyDocumentsPage() {
         owners={[me]}
         lockedOwnerId={me.id}
         requiredDocuments={requiredDocuments}
+        sites={sites}
       />
       <DocumentTable docs={docs} />
     </div>

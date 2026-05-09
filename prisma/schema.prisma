@@ -218,6 +218,7 @@ model Document {
   ownerId            String
   uploadedById       String
   requiredDocumentId String?
+  siteId             String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -225,11 +226,13 @@ model Document {
   owner            User              @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   uploadedBy       User              @relation("DocumentUploader", fields: [uploadedById], references: [id])
   requiredDocument RequiredDocument? @relation(fields: [requiredDocumentId], references: [id], onDelete: SetNull)
+  site             Site?             @relation(fields: [siteId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([ownerId])
   @@index([expirationDate])
   @@index([requiredDocumentId])
+  @@index([siteId])
 }
 
 model CustomRole {
@@ -271,14 +274,17 @@ model CalendarEvent {
   date           DateTime
   organizationId String
   createdById    String
+  siteId         String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User         @relation("EventCreator", fields: [createdById], references: [id])
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([date])
+  @@index([siteId])
 }
 
 model ToolboxTalk {
@@ -290,12 +296,14 @@ model ToolboxTalk {
   organizationId String
   presenterId    String
   createdById    String
+  siteId         String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   presenter     User         @relation("TalkPresenter", fields: [presenterId], references: [id])
   createdBy     User         @relation("TalkCreator", fields: [createdById], references: [id])
+  site          Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
   attendances   ToolboxTalkAttendance[]
   assignedRoles CustomRole[]
   assignedUsers User[]       @relation("TalkAssignedUsers")
@@ -303,6 +311,7 @@ model ToolboxTalk {
   @@index([organizationId])
   @@index([date])
   @@index([presenterId])
+  @@index([siteId])
 }
 
 model ToolboxTalkAttendance {
@@ -412,16 +421,19 @@ model JhaReport {
   status            JhaStatus   @default(OPEN)
   organizationId    String
   reportedById      String
+  siteId            String?
   resolvedAt        DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   reportedBy   User         @relation("JhaReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
   photos       JhaPhoto[]
 
   @@index([organizationId])
   @@index([organizationId, status])
+  @@index([siteId])
 }
 
 model JhaPhoto {
@@ -585,11 +597,15 @@ model Site {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  equipment    Equipment[]
-  permits      Permit[]
-  audits       Audit[]
-  preTaskPlans PreTaskPlan[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment      Equipment[]
+  permits        Permit[]
+  audits         Audit[]
+  preTaskPlans   PreTaskPlan[]
+  documents      Document[]
+  events         CalendarEvent[]
+  jhaReports     JhaReport[]
+  toolboxTalks   ToolboxTalk[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
