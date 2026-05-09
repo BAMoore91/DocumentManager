@@ -46,6 +46,21 @@ enum NotificationType {
   FORUM_REPLY
 }
 
+enum IncidentType {
+  NEAR_MISS
+  FIRST_AID
+  RECORDABLE
+  RESTRICTED_DUTY
+  LOST_TIME
+  FATALITY
+}
+
+enum IncidentStatus {
+  OPEN
+  UNDER_REVIEW
+  CLOSED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -63,6 +78,7 @@ model Organization {
   kbArticles        KbArticle[]
   jhaReports        JhaReport[]
   sdsSheets         SdsSheet[]
+  incidents         Incident[]
 }
 
 model User {
@@ -93,6 +109,8 @@ model User {
   jhaReports        JhaReport[]   @relation("JhaReporter")
   sdsSheets         SdsSheet[]    @relation("SdsUploader")
   notifications     Notification[] @relation("UserNotifications")
+  reportedIncidents Incident[]    @relation("IncidentReporter")
+  incidentsAsPerson Incident[]    @relation("IncidentPersonInvolved")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -330,6 +348,59 @@ model JhaPhoto {
   jha JhaReport @relation(fields: [jhaId], references: [id], onDelete: Cascade)
 
   @@index([jhaId])
+}
+
+model Incident {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  caseNumber         String?
+  type               IncidentType
+  status             IncidentStatus @default(OPEN)
+  occurredAt         DateTime
+  location           String?
+  description        String
+
+  personName         String
+  personUserId       String?
+  jobTitle           String?
+  bodyPart           String?
+  injuryType         String?
+
+  daysAway           Int?
+  daysRestricted     Int?
+  treatmentReceived  String?
+
+  rootCause          String?
+  correctiveActions  String?
+
+  reportedById       String
+  closedAt           DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reportedBy     User         @relation("IncidentReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+  personInvolved User?        @relation("IncidentPersonInvolved", fields: [personUserId], references: [id], onDelete: SetNull)
+  photos         IncidentPhoto[]
+
+  @@index([organizationId])
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, status])
+}
+
+model IncidentPhoto {
+  id         String   @id @default(cuid())
+  incidentId String
+  fileUrl    String
+  fileName   String
+  fileSize   Int
+  mimeType   String
+  caption    String?
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
 }
 
 model Notification {
