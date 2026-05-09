@@ -1,7 +1,19 @@
 import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
 
 function formatDateLocal(d: Date) {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+async function emailUsers(userIds: string[], subject: string, text: string) {
+  if (userIds.length === 0) return;
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { email: true },
+  });
+  const recipients = users.map((u) => u.email).filter(Boolean) as string[];
+  if (recipients.length === 0) return;
+  await sendEmail({ to: recipients, subject, text });
 }
 
 export async function notifyToolboxTalkAssigned(
@@ -19,6 +31,11 @@ export async function notifyToolboxTalkAssigned(
       sourceId: talk.id,
     })),
   });
+  await emailUsers(
+    userIds,
+    `Toolbox talk assigned: ${talk.topic}`,
+    `You're assigned to the toolbox talk "${talk.topic}" on ${formatDateLocal(talk.date)}.`,
+  );
 }
 
 export async function notifyForumReply(
@@ -45,8 +62,9 @@ export async function notifyForumReply(
   for (const r of prevReplies) recipients.add(r.authorId);
   if (recipients.size === 0) return;
 
+  const recipientIds = Array.from(recipients);
   await prisma.notification.createMany({
-    data: Array.from(recipients).map((userId) => ({
+    data: recipientIds.map((userId) => ({
       userId,
       type: "FORUM_REPLY" as const,
       title: `New reply on "${topicTitle}"`,
@@ -55,6 +73,11 @@ export async function notifyForumReply(
       sourceId: topicId,
     })),
   });
+  await emailUsers(
+    recipientIds,
+    `New reply on "${topicTitle}"`,
+    `${replyAuthorName} just replied on "${topicTitle}".`,
+  );
 }
 
 export async function notifyCapaAssigned(
@@ -73,6 +96,13 @@ export async function notifyCapaAssigned(
       sourceId: capa.id,
     },
   });
+  await emailUsers(
+    [userId],
+    `Corrective action assigned: ${capa.title}`,
+    capa.dueDate
+      ? `You have been assigned a corrective action due ${formatDateLocal(capa.dueDate)}.`
+      : "You have been assigned a corrective action.",
+  );
 }
 
 export async function expectedAttendeeIds(
