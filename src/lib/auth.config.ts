@@ -24,7 +24,8 @@ export const authConfig = {
     },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
-      const PUBLIC = ["/login", "/setup", "/api/auth"];
+      const PUBLIC = ["/login", "/setup", "/api/auth", "/manifest.webmanifest", "/sw.js", "/icon.svg"];
+      if (pathname === "/") return true;
       if (PUBLIC.some((p) => pathname.startsWith(p))) return true;
       if (!auth?.user) return false;
 
