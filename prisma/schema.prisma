@@ -162,6 +162,7 @@ model Organization {
   preTaskPlans      PreTaskPlan[]
   subcontractors    Subcontractor[]
   auditTemplates    AuditTemplate[]
+  auditLogs         AuditLog[]
 }
 
 model User {
@@ -207,6 +208,7 @@ model User {
   ptpsCreated       PreTaskPlan[]      @relation("PtpCreator")
   ptpAcknowledgements PtpAcknowledgement[] @relation("PtpAcker")
   signatures        Signature[]        @relation("SignatureSigner")
+  auditLogsAsActor  AuditLog[]         @relation("AuditLogActor")
 
   @@index([organizationId])
   @@index([customRoleId])
@@ -901,4 +903,26 @@ model Signature {
 
   @@index([contextType, contextId])
   @@index([signerId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String?
+  action         String
+  summary        String
+  entityType     String?
+  entityId       String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation("AuditLogActor", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([userId])
+  @@index([action])
 }

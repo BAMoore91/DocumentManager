@@ -6,6 +6,7 @@ import { z } from "zod";
 import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { recordAction } from "@/lib/audit-log";
 import type { IncidentStatus, IncidentType } from "@prisma/client";
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -160,6 +161,15 @@ export async function createIncident(formData: FormData): Promise<void> {
     await prisma.incidentPhoto.create({ data: { incidentId: created.id, ...fields } });
   }
 
+  await recordAction({
+    organizationId: created.organizationId,
+    userId: session.user.id,
+    action: "incident.create",
+    summary: `Reported ${parsed.data.type.replace(/_/g, " ").toLowerCase()} incident for ${parsed.data.personName}`,
+    entityType: "Incident",
+    entityId: created.id,
+  });
+
   revalidatePath("/incidents");
   redirect(`/incidents/${created.id}`);
 }
@@ -249,6 +259,15 @@ export async function setIncidentStatus(formData: FormData): Promise<void> {
     },
   });
 
+  await recordAction({
+    organizationId: incident.organizationId,
+    userId: session.user.id,
+    action: "incident.status",
+    summary: `Set incident "${incident.personName}" to ${status.replace(/_/g, " ").toLowerCase()}`,
+    entityType: "Incident",
+    entityId: incident.id,
+  });
+
   revalidatePath("/incidents");
   revalidatePath(`/incidents/${id}`);
 }
@@ -280,6 +299,15 @@ export async function deleteIncident(formData: FormData): Promise<void> {
   }
 
   await prisma.incident.delete({ where: { id: incident.id } });
+
+  await recordAction({
+    organizationId: incident.organizationId,
+    userId: session.user.id,
+    action: "incident.delete",
+    summary: `Deleted incident report for ${incident.personName}`,
+    entityType: "Incident",
+    entityId: incident.id,
+  });
 
   revalidatePath("/incidents");
   redirect("/incidents");

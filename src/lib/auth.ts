@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { authConfig } from "@/lib/auth.config";
+import { recordAction } from "@/lib/audit-log";
 import type { Role } from "@prisma/client";
 
 const credentialsSchema = z.object({
@@ -41,6 +42,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      if (!user?.id) return;
+      const u = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { id: true, name: true, email: true, organizationId: true },
+      });
+      if (!u?.organizationId) return;
+      await recordAction({
+        organizationId: u.organizationId,
+        userId: u.id,
+        action: "user.login",
+        summary: `${u.name ?? u.email} signed in`,
+        entityType: "User",
+        entityId: u.id,
+      });
+    },
+    async signOut(message) {
+      const userId =
+        "token" in message && message.token?.sub
+          ? String(message.token.sub)
+          : null;
+      if (!userId) return;
+      const u = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true, organizationId: true },
+      });
+      if (!u?.organizationId) return;
+      await recordAction({
+        organizationId: u.organizationId,
+        userId: u.id,
+        action: "user.logout",
+        summary: `${u.name ?? u.email} signed out`,
+        entityType: "User",
+        entityId: u.id,
+      });
+    },
+  },
 });
 
 export async function requireAuth() {

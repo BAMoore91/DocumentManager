@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireAuth, requireRole } from "@/lib/auth";
+import { recordAction } from "@/lib/audit-log";
 import type { FormFieldType, FormStatus } from "@prisma/client";
 
 async function assertOrgAccess(role: string, sessionOrgId: string | null, orgId: string) {
@@ -302,6 +303,15 @@ export async function submitForm(formData: FormData): Promise<void> {
       userId: session.user.id,
       values: values as Prisma.InputJsonValue,
     },
+  });
+
+  await recordAction({
+    organizationId: form.organizationId,
+    userId: session.user.id,
+    action: "form.submit",
+    summary: `Submitted form "${form.name}"`,
+    entityType: "Form",
+    entityId: form.id,
   });
 
   revalidatePath(`/forms/${form.id}`);

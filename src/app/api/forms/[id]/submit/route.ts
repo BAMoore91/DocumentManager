@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { recordAction } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +146,16 @@ export async function POST(
       userId: session.user.id,
       values: values as Prisma.InputJsonValue,
     },
+  });
+
+  await recordAction({
+    organizationId: form.organizationId,
+    userId: session.user.id,
+    action: "form.submit",
+    summary: `Submitted form "${form.name}"`,
+    entityType: "Form",
+    entityId: form.id,
+    metadata: { source: "api" },
   });
 
   return NextResponse.json({ ok: true });

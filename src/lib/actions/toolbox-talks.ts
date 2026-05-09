@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { expectedAttendeeIds, notifyToolboxTalkAssigned } from "@/lib/notifications";
+import { recordAction } from "@/lib/audit-log";
 
 const createSchema = z.object({
   organizationId: z.string().min(1),
@@ -109,6 +110,15 @@ export async function createToolboxTalk(formData: FormData): Promise<void> {
   );
   await notifyToolboxTalkAssigned(expectedIds, created);
 
+  await recordAction({
+    organizationId,
+    userId: session.user.id,
+    action: "toolbox_talk.create",
+    summary: `Scheduled toolbox talk "${topic}"`,
+    entityType: "ToolboxTalk",
+    entityId: created.id,
+  });
+
   revalidatePath("/admin/toolbox-talks");
   revalidatePath("/admin/calendar");
   revalidatePath(`/super-admin/organizations/${organizationId}/calendar`);
@@ -181,6 +191,15 @@ export async function deleteToolboxTalk(formData: FormData): Promise<void> {
   });
   await prisma.toolboxTalk.delete({ where: { id } });
 
+  await recordAction({
+    organizationId: talk.organizationId,
+    userId: session.user.id,
+    action: "toolbox_talk.delete",
+    summary: `Deleted toolbox talk "${talk.topic}"`,
+    entityType: "ToolboxTalk",
+    entityId: talk.id,
+  });
+
   revalidatePath("/admin/toolbox-talks");
   revalidatePath("/admin/calendar");
   revalidatePath(`/super-admin/organizations/${talk.organizationId}/calendar`);
@@ -220,6 +239,15 @@ export async function addAttendee(formData: FormData): Promise<void> {
       },
     });
   }
+
+  await recordAction({
+    organizationId: talk.organizationId,
+    userId: session.user.id,
+    action: "toolbox_talk.attendance_added",
+    summary: `Recorded ${user.name ?? user.email} as attended for "${talk.topic}"`,
+    entityType: "ToolboxTalk",
+    entityId: talk.id,
+  });
 
   revalidatePath(`/admin/toolbox-talks/${talkId}`);
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
+import { recordAction } from "@/lib/audit-log";
 import type { Role } from "@prisma/client";
 
 const newUserSchema = z.object({
@@ -50,8 +51,9 @@ export async function createUser(formData: FormData): Promise<void> {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  let createdId: string | null = null;
   try {
-    await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         email: parsed.data.email,
         name: parsed.data.name,
@@ -60,9 +62,22 @@ export async function createUser(formData: FormData): Promise<void> {
         organizationId: parsed.data.organizationId,
         customRoleId,
       },
+      select: { id: true },
     });
+    createdId = created.id;
   } catch {
     throw new Error("Email already in use");
+  }
+
+  if (parsed.data.organizationId && createdId) {
+    await recordAction({
+      organizationId: parsed.data.organizationId,
+      userId: session.user.id,
+      action: "user.create",
+      summary: `Created ${parsed.data.role.replace("_", " ").toLowerCase()} ${parsed.data.name} (${parsed.data.email})`,
+      entityType: "User",
+      entityId: createdId,
+    });
   }
 
   revalidatePath("/super-admin/users");
@@ -95,6 +110,18 @@ export async function deleteUser(formData: FormData): Promise<void> {
   }
 
   await prisma.user.delete({ where: { id } });
+
+  if (target.organizationId) {
+    await recordAction({
+      organizationId: target.organizationId,
+      userId: session.user.id,
+      action: "user.delete",
+      summary: `Permanently deleted ${target.name ?? target.email} (${target.email})`,
+      entityType: "User",
+      entityId: target.id,
+    });
+  }
+
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
 }
@@ -117,6 +144,16 @@ export async function archiveUser(formData: FormData): Promise<void> {
     where: { id },
     data: { archivedAt: new Date() },
   });
+  if (target.organizationId) {
+    await recordAction({
+      organizationId: target.organizationId,
+      userId: session.user.id,
+      action: "user.archive",
+      summary: `Archived ${target.name ?? target.email}`,
+      entityType: "User",
+      entityId: target.id,
+    });
+  }
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
 }
@@ -138,6 +175,16 @@ export async function restoreUser(formData: FormData): Promise<void> {
     where: { id },
     data: { archivedAt: null },
   });
+  if (target.organizationId) {
+    await recordAction({
+      organizationId: target.organizationId,
+      userId: session.user.id,
+      action: "user.restore",
+      summary: `Restored ${target.name ?? target.email}`,
+      entityType: "User",
+      entityId: target.id,
+    });
+  }
   revalidatePath("/super-admin/users");
   revalidatePath("/admin/users");
 }
@@ -157,4 +204,14 @@ export async function resetPassword(formData: FormData): Promise<void> {
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.update({ where: { id }, data: { passwordHash } });
+  if (target.organizationId) {
+    await recordAction({
+      organizationId: target.organizationId,
+      userId: session.user.id,
+      action: "user.password_reset",
+      summary: `Reset password for ${target.name ?? target.email}`,
+      entityType: "User",
+      entityId: target.id,
+    });
+  }
 }

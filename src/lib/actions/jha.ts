@@ -6,6 +6,7 @@ import { z } from "zod";
 import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { recordAction } from "@/lib/audit-log";
 import type { JhaSeverity, JhaStatus } from "@prisma/client";
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -105,6 +106,15 @@ export async function createJhaReport(formData: FormData): Promise<void> {
     await prisma.jhaPhoto.create({ data: { jhaId: created.id, ...fields } });
   }
 
+  await recordAction({
+    organizationId: created.organizationId,
+    userId: session.user.id,
+    action: "jha.create",
+    summary: `Filed hazard report "${parsed.data.title}" (${parsed.data.severity})`,
+    entityType: "JhaReport",
+    entityId: created.id,
+  });
+
   revalidatePath("/jha");
   redirect(`/jha/${created.id}`);
 }
@@ -180,6 +190,15 @@ export async function setJhaStatus(formData: FormData): Promise<void> {
     },
   });
 
+  await recordAction({
+    organizationId: report.organizationId,
+    userId: session.user.id,
+    action: "jha.status",
+    summary: `Set hazard "${report.title}" to ${status.replace(/_/g, " ").toLowerCase()}`,
+    entityType: "JhaReport",
+    entityId: report.id,
+  });
+
   revalidatePath("/jha");
   revalidatePath(`/jha/${id}`);
 }
@@ -211,6 +230,15 @@ export async function deleteJhaReport(formData: FormData): Promise<void> {
   }
 
   await prisma.jhaReport.delete({ where: { id: report.id } });
+
+  await recordAction({
+    organizationId: report.organizationId,
+    userId: session.user.id,
+    action: "jha.delete",
+    summary: `Deleted hazard report "${report.title}"`,
+    entityType: "JhaReport",
+    entityId: report.id,
+  });
 
   revalidatePath("/jha");
   redirect("/jha");

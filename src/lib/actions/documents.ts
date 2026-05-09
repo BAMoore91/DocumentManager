@@ -5,6 +5,7 @@ import { z } from "zod";
 import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { requireAuth, requireRole } from "@/lib/auth";
+import { recordAction } from "@/lib/audit-log";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
@@ -77,7 +78,7 @@ export async function uploadDocument(formData: FormData): Promise<void> {
     contentType: file.type || "application/octet-stream",
   });
 
-  await prisma.document.create({
+  const created = await prisma.document.create({
     data: {
       name: parsed.data.name,
       type: parsed.data.type,
@@ -93,6 +94,16 @@ export async function uploadDocument(formData: FormData): Promise<void> {
       requiredDocumentId,
       siteId,
     },
+    select: { id: true },
+  });
+
+  await recordAction({
+    organizationId: owner.organizationId,
+    userId: session.user.id,
+    action: "document.upload",
+    summary: `Uploaded "${parsed.data.name}" for ${owner.name ?? owner.email}`,
+    entityType: "Document",
+    entityId: created.id,
   });
 
   revalidatePath("/admin");
@@ -124,6 +135,15 @@ export async function deleteDocument(formData: FormData): Promise<void> {
     }
   }
   await prisma.document.delete({ where: { id } });
+
+  await recordAction({
+    organizationId: doc.organizationId,
+    userId: session.user.id,
+    action: "document.delete",
+    summary: `Deleted document "${doc.name}"`,
+    entityType: "Document",
+    entityId: doc.id,
+  });
 
   revalidatePath("/admin/documents");
   revalidatePath("/documents");
