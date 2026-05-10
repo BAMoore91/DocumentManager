@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { isSetupComplete } from "@/lib/actions/setup";
@@ -33,6 +34,24 @@ import {
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: {
+    absolute:
+      "DocManager — Safety, training, and document compliance for construction & field crews",
+  },
+  description:
+    "All-in-one safety platform: OSHA 300 incident logging, JHAs, toolbox talks, training records, SDS library, equipment inspections, permits, audits, and document expiration tracking — built for construction, field-services, and industrial teams.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    title:
+      "DocManager — Safety, training, and document compliance for construction & field crews",
+    description:
+      "OSHA 300 logging, JHAs, toolbox talks, training records, SDS, inspections, permits, audits, and document expirations — one place to keep every jobsite audit-ready.",
+    url: "/",
+  },
+};
 
 type Feature = {
   icon: typeof ShieldCheck;
@@ -229,8 +248,125 @@ export default async function Home({
   const contactSuccess = contact === "success";
   const contactError = contact === "error";
 
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "DocManager",
+      url: "/",
+      logo: "/icon.svg",
+      description:
+        "Safety-compliance platform for construction, field-services, and industrial teams. OSHA 300 logging, JHAs, toolbox talks, training records, SDS library, equipment inspections, permits, audits, and document expiration tracking.",
+      sameAs: [],
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          contactType: "sales",
+          availableLanguage: ["en"],
+          url: "/#contact",
+        },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "DocManager",
+      applicationCategory: "BusinessApplication",
+      applicationSubCategory: "Safety, Health & Environment (EHS) software",
+      operatingSystem: "Web (Progressive Web App), iOS, Android",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      featureList: [
+        "OSHA 300, 300A, and 301 incident recordkeeping",
+        "Job Hazard Analyses with photos and severity tracking",
+        "Toolbox talks with role and individual assignment, attendance, and signatures",
+        "Training catalog and per-employee training matrix with expirations",
+        "Required-document tracking by custom role",
+        "Document expiration alerts and compliance percentage rollups",
+        "Safety Data Sheet (SDS) library",
+        "Equipment inspections with templated checklists",
+        "Permits-to-Work (hot work, confined space, LOTO, working at heights)",
+        "Safety audits with templated checklists and finding tracking",
+        "Pre-Task Plans and daily huddles",
+        "Subcontractor compliance and Certificate of Insurance tracking",
+        "Corrective Actions (CAPA) tied to JHAs, incidents, audits",
+        "Sites and projects scoping",
+        "Custom forms with signatures, file upload, and submission history",
+        "Knowledge Base for SOPs and policies",
+        "Safety forum with notifications",
+        "Calendar with events and document expirations",
+        "Activity log / audit trail",
+        "Multi-organization super-admin dashboard",
+        "PWA with offline form submissions",
+      ],
+      description:
+        "All-in-one safety, training, and compliance system for jobsites. Mobile-friendly PWA with offline support.",
+      url: "/",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "DocManager",
+      url: "/",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "/?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Does DocManager support OSHA 300 / 300A / 301 recordkeeping?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. The Incident module classifies events as First Aid, Recordable, Restricted Duty, Lost Time, Near Miss, or Fatality and produces the OSHA Form 300 log, Form 300A annual summary, and printable Form 301 incident reports.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I track training certifications and expirations?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Define a training catalog (OSHA-10, First Aid, Forklift, etc.), log completions with instructor, hours, expiration dates, and certificate uploads. Each member sees their training matrix and the org admin sees a compliance rollup.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does it work offline?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "DocManager is a Progressive Web App. Custom forms can be filled out offline and queued in the browser; submissions sync automatically when the device reconnects.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I assign Toolbox Talks to specific roles or people?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Toolbox Talks support assignment to custom roles or individual users, in-app notifications, attendance tracking, and digital signatures.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is multi-organization (multi-tenant) support included?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. A super-admin dashboard manages organizations, applies per-org user limits, monitors storage and compliance, and surfaces site-activity analytics across the platform.",
+          },
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Top bar */}
       <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
