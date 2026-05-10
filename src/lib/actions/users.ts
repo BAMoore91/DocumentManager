@@ -92,7 +92,7 @@ export async function createUser(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/super-admin/users");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
   revalidatePath("/super-admin");
   revalidatePath("/admin");
 }
@@ -134,7 +134,7 @@ export async function deleteUser(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/super-admin/users");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
 }
 
 export async function archiveUser(formData: FormData): Promise<void> {
@@ -166,7 +166,7 @@ export async function archiveUser(formData: FormData): Promise<void> {
     });
   }
   revalidatePath("/super-admin/users");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
 }
 
 export async function restoreUser(formData: FormData): Promise<void> {
@@ -206,7 +206,7 @@ export async function restoreUser(formData: FormData): Promise<void> {
     });
   }
   revalidatePath("/super-admin/users");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
 }
 
 export async function resetPassword(formData: FormData): Promise<void> {

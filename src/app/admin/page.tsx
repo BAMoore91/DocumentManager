@@ -13,7 +13,7 @@ export default async function AdminDashboard() {
       <OrgDashboard
         orgId={session.user.organizationId}
         subtitle="Metrics for your organization's documents and members."
-        userLinkBasePath="/admin/users"
+        userLinkBasePath="/admin/settings/users"
       />
     </div>
   );

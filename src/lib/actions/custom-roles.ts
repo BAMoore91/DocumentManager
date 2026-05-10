@@ -35,7 +35,7 @@ export async function createCustomRole(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/settings/roles");
   revalidatePath("/admin/settings/required-documents");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
   revalidatePath(`/super-admin/organizations/${organizationId}`);
 }
 
@@ -58,7 +58,7 @@ export async function deleteCustomRole(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/settings/roles");
   revalidatePath("/admin/settings/required-documents");
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
   revalidatePath(`/super-admin/organizations/${role.organizationId}`);
 }
 
@@ -89,6 +89,6 @@ export async function assignCustomRole(formData: FormData): Promise<void> {
 
   await prisma.user.update({ where: { id: userId }, data: { customRoleId } });
 
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/settings/users");
   revalidatePath("/admin/settings/roles");
 }

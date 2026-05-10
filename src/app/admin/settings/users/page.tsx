@@ -39,6 +39,13 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/admin/settings"
+        className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+      >
+        ← Settings
+      </Link>
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Organization Members</h1>
@@ -126,7 +133,7 @@ export default async function AdminUsersPage() {
             {activeUsers.map((u) => (
               <tr key={u.id} className="border-b border-[hsl(var(--border))] last:border-0">
                 <td className="px-4 py-3 font-medium">
-                  <Link href={`/admin/users/${u.id}`} className="hover:underline">
+                  <Link href={`/admin/settings/users/${u.id}`} className="hover:underline">
                     {u.name ?? u.email}
                   </Link>
                 </td>

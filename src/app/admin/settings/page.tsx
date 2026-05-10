@@ -12,9 +12,17 @@ import {
   MapPin,
   GraduationCap,
   ListChecks,
+  Users,
 } from "lucide-react";
 
 const sections = [
+  {
+    href: "/admin/settings/users",
+    title: "Members",
+    description:
+      "Add, archive, or restore organization members and assign their titles.",
+    icon: Users,
+  },
   {
     href: "/admin/settings/roles",
     title: "Custom roles",

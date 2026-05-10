@@ -37,7 +37,7 @@ export default async function AdminUserDashboardPage({
   return (
     <div className="space-y-4">
       <Link
-        href="/admin/users"
+        href="/admin/settings/users"
         className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
       >
         ← All members
