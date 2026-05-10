@@ -116,7 +116,87 @@ export default async function AdminUsersPage() {
         </FormModal>
       </div>
 
-      <Card className="overflow-x-auto p-0">
+      {/* Mobile: card list */}
+      <div className="space-y-3 md:hidden">
+        {activeUsers.map((u) => (
+          <Card key={u.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link
+                  href={`/admin/settings/users/${u.id}`}
+                  className="block truncate font-medium hover:underline"
+                >
+                  {u.name ?? u.email}
+                </Link>
+                <div className="truncate text-xs text-[hsl(var(--muted-foreground))]">
+                  {u.email}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[hsl(var(--muted-foreground))]">
+                  <span>{u.role.replace("_", " ")}</span>
+                  {u.customRole ? (
+                    <>
+                      <span>·</span>
+                      <span>{u.customRole.name}</span>
+                    </>
+                  ) : null}
+                  <span>·</span>
+                  <span>{u._count.documents} doc{u._count.documents === 1 ? "" : "s"}</span>
+                  <span>·</span>
+                  <span>Joined {formatDate(u.createdAt)}</span>
+                </div>
+              </div>
+              <div className="shrink-0">
+                {u.id !== session.user.id ? (
+                  <UserRemovalModal
+                    userId={u.id}
+                    userName={u.name}
+                    userEmail={u.email}
+                  />
+                ) : (
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">you</span>
+                )}
+              </div>
+            </div>
+            <form
+              action={assignCustomRole}
+              className="mt-3 flex items-center gap-2"
+            >
+              <input type="hidden" name="userId" value={u.id} />
+              <div className="flex-1">
+                <Label htmlFor={`title-${u.id}`} className="text-xs">
+                  Title
+                </Label>
+                <Select
+                  id={`title-${u.id}`}
+                  name="customRoleId"
+                  defaultValue={u.customRole?.id ?? ""}
+                  className="h-9"
+                >
+                  <option value="">— None —</option>
+                  {customRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Button type="submit" size="sm" variant="secondary" className="self-end">
+                Save
+              </Button>
+            </form>
+          </Card>
+        ))}
+        {activeUsers.length === 0 ? (
+          <Card>
+            <p className="text-center text-sm text-[hsl(var(--muted-foreground))]">
+              No active members.
+            </p>
+          </Card>
+        ) : null}
+      </div>
+
+      {/* Desktop: table */}
+      <Card className="hidden overflow-x-auto p-0 md:block">
         <table className="w-full text-sm">
           <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
             <tr>
@@ -190,7 +270,40 @@ export default async function AdminUsersPage() {
           <h2 className="mb-3 text-lg font-semibold">
             Archived members ({archivedUsers.length})
           </h2>
-          <Card className="overflow-x-auto p-0">
+
+          {/* Mobile: archived cards */}
+          <div className="space-y-3 md:hidden">
+            {archivedUsers.map((u) => (
+              <Card key={u.id} className="bg-[hsl(var(--muted))]/30">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{u.name ?? "—"}</div>
+                  <div className="truncate text-xs text-[hsl(var(--muted-foreground))]">
+                    {u.email}
+                  </div>
+                  <div className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    {u._count.documents} doc{u._count.documents === 1 ? "" : "s"}
+                    {u.archivedAt ? ` · Archived ${formatDate(u.archivedAt)}` : ""}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <form action={restoreUser}>
+                    <input type="hidden" name="id" value={u.id} />
+                    <Button type="submit" variant="secondary" size="sm">
+                      Restore
+                    </Button>
+                  </form>
+                  <UserRemovalModal
+                    userId={u.id}
+                    userName={u.name}
+                    userEmail={u.email}
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop: archived table */}
+          <Card className="hidden overflow-x-auto p-0 md:block">
             <table className="w-full text-sm">
               <thead className="border-b border-[hsl(var(--border))] text-left text-xs uppercase text-[hsl(var(--muted-foreground))]">
                 <tr>
