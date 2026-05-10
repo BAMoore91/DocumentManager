@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { OrgDashboard } from "@/components/org-dashboard";
+import { getOrgSeatUsage } from "@/lib/seats";
 
 export default async function OrganizationDashboardPage({
   params,
@@ -14,6 +15,13 @@ export default async function OrganizationDashboardPage({
     select: { id: true, name: true },
   });
   if (!org) notFound();
+
+  const seats = await getOrgSeatUsage(org.id);
+  const seatSummary =
+    seats.limit === null
+      ? `${seats.used} active member${seats.used === 1 ? "" : "s"} · unlimited seats`
+      : `${seats.used} of ${seats.limit} seats used` +
+        (seats.isFull ? " — limit reached" : ` · ${seats.remaining} remaining`);
 
   return (
     <div className="space-y-4">
@@ -34,7 +42,7 @@ export default async function OrganizationDashboardPage({
       <OrgDashboard
         orgId={org.id}
         title={org.name}
-        subtitle="Organization metrics and upcoming expirations."
+        subtitle={seatSummary}
         userLinkBasePath="/super-admin/users"
       />
     </div>

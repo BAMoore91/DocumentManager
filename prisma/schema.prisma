@@ -137,6 +137,7 @@ enum PtpStatus {
 model Organization {
   id        String   @id @default(cuid())
   name      String   @unique
+  userLimit Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

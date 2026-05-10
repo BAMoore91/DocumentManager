@@ -20,6 +20,8 @@ export function FormModal({
   description,
   children,
   size = "md",
+  disabled = false,
+  disabledReason,
 }: {
   triggerLabel: string;
   triggerIcon?: "plus" | "none";
@@ -28,6 +30,8 @@ export function FormModal({
   description?: string;
   children: ReactNode;
   size?: Size;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,8 +40,10 @@ export function FormModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        disabled={disabled}
+        title={disabled ? disabledReason : undefined}
         className={cn(
-          "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition print:hidden",
+          "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition print:hidden disabled:cursor-not-allowed disabled:opacity-50",
           triggerVariant === "primary"
             ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:opacity-90"
             : "border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]",

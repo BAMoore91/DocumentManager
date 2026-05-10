@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { recordAction } from "@/lib/audit-log";
+import { getOrgSeatUsage } from "@/lib/seats";
 import type { Role } from "@prisma/client";
 
 const newUserSchema = z.object({
@@ -48,6 +49,16 @@ export async function createUser(formData: FormData): Promise<void> {
       throw new Error("Invalid title");
     }
     customRoleId = cr.id;
+  }
+
+  if (parsed.data.organizationId) {
+    const seats = await getOrgSeatUsage(parsed.data.organizationId);
+    if (seats.isFull) {
+      throw new Error(
+        `This organization has reached its user limit (${seats.used}/${seats.limit}). ` +
+          `Ask the global administrator to raise the limit, or archive an existing user first.`,
+      );
+    }
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
@@ -169,6 +180,15 @@ export async function restoreUser(formData: FormData): Promise<void> {
   if (session.user.role === "ORG_ADMIN") {
     if (target.organizationId !== session.user.organizationId) throw new Error("Forbidden");
     if (target.role === "SUPER_ADMIN") throw new Error("Forbidden");
+  }
+
+  if (target.organizationId) {
+    const seats = await getOrgSeatUsage(target.organizationId);
+    if (seats.isFull) {
+      throw new Error(
+        `Cannot restore — organization is at its user limit (${seats.used}/${seats.limit}).`,
+      );
+    }
   }
 
   await prisma.user.update({

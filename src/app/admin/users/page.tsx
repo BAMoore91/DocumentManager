@@ -9,14 +9,15 @@ import { FormModal } from "@/components/form-modal";
 import { UserRemovalModal } from "@/components/user-removal-modal";
 import { createUser, restoreUser } from "@/lib/actions/users";
 import { assignCustomRole } from "@/lib/actions/custom-roles";
-import { formatDate } from "@/lib/utils";
+import { getOrgSeatUsage } from "@/lib/seats";
+import { cn, formatDate } from "@/lib/utils";
 
 export default async function AdminUsersPage() {
   const session = await auth();
   if (!session?.user.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  const [users, customRoles] = await Promise.all([
+  const [users, customRoles, seats] = await Promise.all([
     prisma.user.findMany({
       where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
@@ -30,6 +31,7 @@ export default async function AdminUsersPage() {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    getOrgSeatUsage(orgId),
   ]);
 
   const activeUsers = users.filter((u) => !u.archivedAt);
@@ -38,8 +40,31 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Organization Members</h1>
-        <FormModal triggerLabel="Add member" title="Add member" size="lg">
+        <div>
+          <h1 className="text-2xl font-semibold">Organization Members</h1>
+          <p
+            className={cn(
+              "text-sm",
+              seats.isFull
+                ? "font-medium text-red-600 dark:text-red-300"
+                : "text-[hsl(var(--muted-foreground))]",
+            )}
+          >
+            {seats.limit === null
+              ? `${seats.used} active member${seats.used === 1 ? "" : "s"} · unlimited seats`
+              : `${seats.used} of ${seats.limit} seats used` +
+                (seats.isFull
+                  ? " — limit reached. Archive a member or contact your administrator to raise the limit."
+                  : ` · ${seats.remaining} remaining`)}
+          </p>
+        </div>
+        <FormModal
+          triggerLabel="Add member"
+          title="Add member"
+          size="lg"
+          disabled={seats.isFull}
+          disabledReason="At user limit — archive an existing member first."
+        >
           <form action={createUser} className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <input type="hidden" name="organizationId" value={orgId} />
             <div>
