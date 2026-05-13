@@ -13,6 +13,7 @@ import {
   GraduationCap,
   ListChecks,
   Users,
+  History,
 } from "lucide-react";
 
 const sections = [
@@ -22,6 +23,13 @@ const sections = [
     description:
       "Add, archive, or restore organization members and assign their titles.",
     icon: Users,
+  },
+  {
+    href: "/admin/settings/logs",
+    title: "Activity log",
+    description:
+      "Audit trail of every recorded action — sign-ins, uploads, member changes, hazard reports, and more.",
+    icon: History,
   },
   {
     href: "/admin/settings/roles",

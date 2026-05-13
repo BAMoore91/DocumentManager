@@ -95,11 +95,17 @@ export default async function AdminLogsPage({
       else params.set(k, v);
     }
     const s = params.toString();
-    return s ? `/admin/logs?${s}` : "/admin/logs";
+    return s ? `/admin/settings/logs?${s}` : "/admin/settings/logs";
   }
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/admin/settings"
+        className="inline-block text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+      >
+        ← Settings
+      </Link>
       <div>
         <h1 className="text-2xl font-semibold">Activity log</h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))]">
@@ -150,7 +156,7 @@ export default async function AdminLogsPage({
           <div className="md:col-span-5 flex gap-2">
             <Button type="submit">Apply</Button>
             <Link
-              href="/admin/logs"
+              href="/admin/settings/logs"
               className="inline-flex h-10 items-center justify-center rounded-md border border-[hsl(var(--border))] px-4 text-sm hover:bg-[hsl(var(--muted))]"
             >
               Reset

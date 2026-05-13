@@ -24,7 +24,6 @@ const navByRole: Record<Role, NavItem[]> = {
   ORG_ADMIN: [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/reports", label: "Reports" },
-    { href: "/admin/logs", label: "Activity log" },
     { href: "/admin/subcontractors", label: "Subcontractors" },
     { href: "/admin/documents", label: "Documents" },
     { href: "/admin/calendar", label: "Calendar" },
