@@ -12,7 +12,10 @@ import {
   AnthropicConfigError,
   isAnthropicConfigured,
 } from "@/lib/ai/anthropic";
-import { findSdsCandidates } from "@/lib/ai/sds-search";
+import {
+  findSdsCandidates,
+  type SdsCandidate,
+} from "@/lib/ai/sds-search";
 import { extractSdsMetadata } from "@/lib/ai/sds-extract";
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -233,15 +236,6 @@ export async function deleteSdsSheet(formData: FormData): Promise<void> {
 }
 
 // ---------- AI: find candidates -----------------------------------------
-
-export type SdsCandidate = {
-  title: string;
-  sourceUrl: string;
-  manufacturer?: string | null;
-  revisionDate?: string | null;
-  confidence?: number | null;
-  rationale?: string | null;
-};
 
 export async function findSdsCandidatesAction(input: {
   product: string;

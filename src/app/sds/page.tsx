@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, FileText } from "lucide-react";
+import { SdsFindModal } from "@/components/sds-find-modal";
+import { isAnthropicConfigured } from "@/lib/ai/anthropic";
 import { formatBytes, formatDate } from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
 
@@ -41,6 +43,7 @@ export default async function SdsListPage({
   });
 
   const isAdmin = session.user.role === "ORG_ADMIN";
+  const aiEnabled = isAnthropicConfigured();
 
   return (
     <div className="space-y-6">
@@ -52,12 +55,15 @@ export default async function SdsListPage({
           </p>
         </div>
         {isAdmin ? (
-          <Link
-            href="/sds/new"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
-          >
-            Upload SDS
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {aiEnabled ? <SdsFindModal /> : null}
+            <Link
+              href="/sds/new"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-[hsl(var(--primary))] px-4 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90"
+            >
+              Upload SDS
+            </Link>
+          </div>
         ) : null}
       </div>
 
