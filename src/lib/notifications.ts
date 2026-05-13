@@ -81,6 +81,50 @@ export async function notifyForumReply(
   );
 }
 
+export async function notifySdsNewVersion(args: {
+  organizationId: string;
+  sheetId: string;
+  productName: string;
+  staleReason: "age" | "newer-revision-found";
+  rationale?: string | null;
+}) {
+  const admins = await prisma.user.findMany({
+    where: {
+      organizationId: args.organizationId,
+      role: "ORG_ADMIN",
+      archivedAt: null,
+    },
+    select: { id: true },
+  });
+  if (admins.length === 0) return;
+
+  const title =
+    args.staleReason === "newer-revision-found"
+      ? `Newer SDS available for ${args.productName}`
+      : `SDS may be out of date: ${args.productName}`;
+  const body =
+    args.rationale ??
+    (args.staleReason === "newer-revision-found"
+      ? "An AI freshness check found a newer manufacturer revision. Review and replace from the SDS detail page."
+      : "This SDS revision is more than three years old. Review the manufacturer's site for an updated version.");
+
+  await prisma.notification.createMany({
+    data: admins.map((u) => ({
+      userId: u.id,
+      type: "SDS_NEW_VERSION" as const,
+      title,
+      body,
+      linkUrl: `/sds/${args.sheetId}`,
+      sourceId: args.sheetId,
+    })),
+  });
+  await emailUsers(
+    admins.map((u) => u.id),
+    title,
+    `${body}\n\nOpen: /sds/${args.sheetId}`,
+  );
+}
+
 export async function notifyCapaAssigned(
   userId: string,
   capa: { id: string; title: string; dueDate: Date | null },

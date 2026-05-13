@@ -116,6 +116,13 @@ export default async function SdsListPage({
                   <Link href={`/sds/${s.id}`} className="hover:underline">
                     {s.productName}
                   </Link>
+                  {s.isStale ? (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                      {s.staleReason === "newer-revision-found"
+                        ? "New version available"
+                        : "Stale"}
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3">{s.manufacturer ?? "—"}</td>
                 <td className="px-4 py-3 tabular-nums">{s.casNumber ?? "—"}</td>

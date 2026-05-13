@@ -6,9 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
-import { deleteSdsSheet, updateSdsSheet } from "@/lib/actions/sds";
+import {
+  applyRevisionUpdateAction,
+  deleteSdsSheet,
+  dismissSdsStaleFlagAction,
+  updateSdsSheet,
+} from "@/lib/actions/sds";
 import { formatBytes, formatDate } from "@/lib/utils";
-import { FileText } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText } from "lucide-react";
 
 function dateInputValue(d: Date | null) {
   if (!d) return "";
@@ -62,6 +67,95 @@ export default async function SdsDetailPage({
           </form>
         ) : null}
       </div>
+
+      {sheet.isStale ? (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                {sheet.staleReason === "newer-revision-found"
+                  ? "Newer manufacturer revision available"
+                  : sheet.staleReason === "age"
+                    ? "This SDS is more than three years old"
+                    : "This SDS may be out of date"}
+              </div>
+              {sheet.latestKnownNotes ? (
+                <p className="mt-1 text-sm text-amber-900 dark:text-amber-100">
+                  {sheet.latestKnownNotes}
+                </p>
+              ) : null}
+              {sheet.latestKnownSourceUrl ? (
+                <div className="mt-1 text-xs text-amber-800 dark:text-amber-200">
+                  <a
+                    href={sheet.latestKnownSourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {(() => {
+                      try {
+                        return new URL(sheet.latestKnownSourceUrl).host;
+                      } catch {
+                        return sheet.latestKnownSourceUrl;
+                      }
+                    })()}
+                    {sheet.latestKnownRevisionAt
+                      ? ` · Revision ${formatDate(sheet.latestKnownRevisionAt)}`
+                      : ""}
+                  </a>
+                </div>
+              ) : null}
+              {isAdmin ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {sheet.latestKnownSourceUrl ? (
+                    <form action={applyRevisionUpdateAction}>
+                      <input type="hidden" name="id" value={sheet.id} />
+                      <SubmitButton pendingLabel="Replacing…">
+                        Replace with newer version
+                      </SubmitButton>
+                    </form>
+                  ) : null}
+                  <form action={dismissSdsStaleFlagAction}>
+                    <input type="hidden" name="id" value={sheet.id} />
+                    <SubmitButton variant="secondary" pendingLabel="Dismissing…">
+                      Dismiss
+                    </SubmitButton>
+                  </form>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {sheet.signalWord || sheet.ghsPictograms.length > 0 || sheet.hazardStatements.length > 0 ? (
+        <Card>
+          <h2 className="mb-2 text-sm font-medium uppercase text-[hsl(var(--muted-foreground))]">
+            Hazard summary (AI-extracted)
+          </h2>
+          <div className="space-y-1 text-sm">
+            {sheet.signalWord ? (
+              <div>
+                <span className="font-medium">Signal word:</span> {sheet.signalWord}
+              </div>
+            ) : null}
+            {sheet.ghsPictograms.length > 0 ? (
+              <div>
+                <span className="font-medium">GHS pictograms:</span>{" "}
+                {sheet.ghsPictograms.join(", ")}
+              </div>
+            ) : null}
+            {sheet.hazardStatements.length > 0 ? (
+              <div>
+                <span className="font-medium">Hazard statements:</span>{" "}
+                {sheet.hazardStatements.join(", ")}
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
