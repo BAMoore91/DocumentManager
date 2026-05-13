@@ -45,6 +45,7 @@ enum NotificationType {
   TOOLBOX_TALK_ASSIGNED
   FORUM_REPLY
   CAPA_ASSIGNED
+  SDS_NEW_VERSION
 }
 
 enum IncidentType {
@@ -681,26 +682,53 @@ model Notification {
 }
 
 model SdsSheet {
-  id             String   @id @default(cuid())
-  productName    String
-  manufacturer   String?
-  casNumber      String?
-  revisionDate   DateTime?
-  notes          String?
-  fileUrl        String
-  fileName       String
-  fileSize       Int
-  mimeType       String
-  organizationId String
-  uploadedById   String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  productName           String
+  manufacturer          String?
+  casNumber             String?
+  revisionDate          DateTime?
+  notes                 String?
+  fileUrl               String
+  fileName              String
+  fileSize              Int
+  mimeType              String
+  organizationId        String
+  uploadedById          String
+  ghsPictograms         String[]
+  signalWord            String?
+  hazardStatements      String[]
+  lastCheckedAt         DateTime?
+  latestKnownRevisionAt DateTime?
+  latestKnownSourceUrl  String?
+  latestKnownNotes      String?
+  isStale               Boolean   @default(false)
+  staleReason           String?
+  sourceUrl             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   uploadedBy   User         @relation("SdsUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  revisionChecks SdsRevisionCheck[]
 
   @@index([organizationId])
   @@index([organizationId, productName])
+  @@index([lastCheckedAt])
+  @@index([isStale])
+}
+
+model SdsRevisionCheck {
+  id              String   @id @default(cuid())
+  sdsSheetId      String
+  sdsSheet        SdsSheet @relation(fields: [sdsSheetId], references: [id], onDelete: Cascade)
+  checkedAt       DateTime @default(now())
+  foundUrl        String?
+  foundRevisionAt DateTime?
+  confidence      Float?
+  rationale       String?
+  status          String
+
+  @@index([sdsSheetId, checkedAt])
 }
 
 model KbArticle {
