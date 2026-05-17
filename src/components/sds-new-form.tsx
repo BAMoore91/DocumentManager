@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Sparkles, Loader2, Beaker } from "lucide-react";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { SubmitButton } from "@/components/submit-button";
 import { createSdsSheet } from "@/lib/actions/sds";
@@ -16,6 +16,24 @@ type ExtractedMetadata = {
   hazardStatements?: string[];
 };
 
+type PubChemHazard = {
+  pubchemCid: number;
+  canonicalName: string | null;
+  casNumber: string | null;
+  signalWord: "Danger" | "Warning" | null;
+  ghsPictograms: string[];
+  hazardStatements: string[];
+  sourceUrl: string;
+};
+
+type PubChemState =
+  | { status: "idle" }
+  | { status: "looking" }
+  | { status: "hit"; hazard: PubChemHazard }
+  | { status: "miss" };
+
+const CAS_RE = /^\d{2,7}-\d{2}-\d$/;
+
 export function SdsNewForm({ aiEnabled }: { aiEnabled: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [productName, setProductName] = useState("");
@@ -29,6 +47,58 @@ export function SdsNewForm({ aiEnabled }: { aiEnabled: boolean }) {
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractedSummary, setExtractedSummary] = useState<string | null>(null);
+  const [pubchem, setPubchem] = useState<PubChemState>({ status: "idle" });
+
+  const lastLookupKey = useRef<string>("");
+
+  // Debounced PubChem lookup whenever the CAS or product name settles.
+  useEffect(() => {
+    const cas = casNumber.trim();
+    const name = productName.trim();
+    const key = `${cas}|${name}`;
+    if (!cas && name.length < 3) {
+      setPubchem({ status: "idle" });
+      lastLookupKey.current = "";
+      return;
+    }
+    if (cas && !CAS_RE.test(cas) && name.length < 3) {
+      setPubchem({ status: "idle" });
+      return;
+    }
+    if (key === lastLookupKey.current) return;
+    const handle = window.setTimeout(async () => {
+      lastLookupKey.current = key;
+      setPubchem({ status: "looking" });
+      try {
+        const res = await fetch("/api/sds/pubchem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cas: cas || undefined, name: name || undefined }),
+        });
+        const json: { ok: boolean; hazard?: PubChemHazard | null } =
+          await res.json();
+        if (!json.ok || !json.hazard) {
+          setPubchem({ status: "miss" });
+          return;
+        }
+        const h = json.hazard;
+        setPubchem({ status: "hit", hazard: h });
+        if (!productName && h.canonicalName) setProductName(h.canonicalName);
+        if (!casNumber && h.casNumber) setCasNumber(h.casNumber);
+        if (h.signalWord && !aiSignalWord) setAiSignalWord(h.signalWord);
+        if (h.ghsPictograms.length && aiGhs.length === 0) setAiGhs(h.ghsPictograms);
+        if (h.hazardStatements.length && aiHazards.length === 0) {
+          setAiHazards(h.hazardStatements);
+        }
+      } catch {
+        setPubchem({ status: "miss" });
+      }
+    }, 700);
+    return () => window.clearTimeout(handle);
+    // intentionally narrow deps; we only want to refire on the typed values
+    // settling, not on cascading auto-fills.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [casNumber, productName]);
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     setExtractError(null);
@@ -58,11 +128,13 @@ export function SdsNewForm({ aiEnabled }: { aiEnabled: boolean }) {
           : "";
         if (iso) setRevisionDate(iso);
       }
+      // Haiku's PDF read wins over PubChem when both are present — the actual
+      // document is more authoritative for the specific product variant.
       if (m.signalWord === "Danger" || m.signalWord === "Warning") {
         setAiSignalWord(m.signalWord);
       }
-      setAiGhs(m.ghsPictograms ?? []);
-      setAiHazards(m.hazardStatements ?? []);
+      if (m.ghsPictograms?.length) setAiGhs(m.ghsPictograms);
+      if (m.hazardStatements?.length) setAiHazards(m.hazardStatements);
       const summaryParts: string[] = [];
       if (m.signalWord) summaryParts.push(`Signal word: ${m.signalWord}`);
       if (m.ghsPictograms?.length)
@@ -135,6 +207,7 @@ export function SdsNewForm({ aiEnabled }: { aiEnabled: boolean }) {
             value={casNumber}
             onChange={(e) => setCasNumber(e.target.value)}
           />
+          <PubChemBadge state={pubchem} />
         </div>
       </div>
       <div>
@@ -197,5 +270,48 @@ export function SdsNewForm({ aiEnabled }: { aiEnabled: boolean }) {
       </div>
       <SubmitButton pendingLabel="Uploading…">Upload SDS</SubmitButton>
     </form>
+  );
+}
+
+function PubChemBadge({ state }: { state: PubChemState }) {
+  if (state.status === "idle") return null;
+  if (state.status === "looking") {
+    return (
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Looking up in PubChem…
+      </p>
+    );
+  }
+  if (state.status === "miss") {
+    return (
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+        <Beaker className="h-3 w-3" />
+        No PubChem match — that's fine, the form still works.
+      </p>
+    );
+  }
+  const h = state.hazard;
+  const parts: string[] = [];
+  if (h.signalWord) parts.push(h.signalWord);
+  if (h.ghsPictograms.length) parts.push(h.ghsPictograms.join(" "));
+  if (h.hazardStatements.length) parts.push(h.hazardStatements.join(" "));
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
+      <Beaker className="h-3 w-3" />
+      <a
+        href={h.sourceUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="hover:underline"
+      >
+        PubChem ✓ {h.canonicalName ?? "match"}
+      </a>
+      {parts.length > 0 ? (
+        <span className="text-[hsl(var(--muted-foreground))]">
+          · {parts.join(" · ")}
+        </span>
+      ) : null}
+    </p>
   );
 }

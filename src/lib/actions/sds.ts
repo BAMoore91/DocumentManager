@@ -17,6 +17,7 @@ import {
   type SdsCandidate,
 } from "@/lib/ai/sds-search";
 import { extractSdsMetadata } from "@/lib/ai/sds-extract";
+import { lookupBest, type PubChemHazardData } from "@/lib/pubchem";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
@@ -110,6 +111,14 @@ export async function createSdsSheet(formData: FormData): Promise<void> {
 
   const fileFields = await uploadSdsFile(file, orgId);
 
+  const manualHandoff =
+    String(formData.get("manualHandoff") ?? "") === "1";
+  const sourceUrl =
+    typeof formData.get("sourceUrl") === "string" &&
+    String(formData.get("sourceUrl")).startsWith("https://")
+      ? String(formData.get("sourceUrl"))
+      : null;
+
   const created = await prisma.sdsSheet.create({
     data: {
       productName: parsed.data.productName,
@@ -122,6 +131,7 @@ export async function createSdsSheet(formData: FormData): Promise<void> {
       signalWord: parseSignalWord(formData.get("aiSignalWord")),
       ghsPictograms: parseGhsPictograms(formData.get("aiGhsPictograms")),
       hazardStatements: parseStringArray(formData.get("aiHazardStatements")),
+      sourceUrl,
       ...fileFields,
     },
     select: { id: true },
@@ -130,8 +140,10 @@ export async function createSdsSheet(formData: FormData): Promise<void> {
   await recordAction({
     organizationId: orgId,
     userId: session.user.id,
-    action: "sds.upload",
-    summary: `Uploaded SDS "${parsed.data.productName}"`,
+    action: manualHandoff ? "sds.ai-imported-manual" : "sds.upload",
+    summary: manualHandoff
+      ? `Manually uploaded AI-found SDS "${parsed.data.productName}"`
+      : `Uploaded SDS "${parsed.data.productName}"`,
     entityType: "SdsSheet",
     entityId: created.id,
   });
@@ -242,7 +254,11 @@ export async function findSdsCandidatesAction(input: {
   manufacturer?: string;
   casNumber?: string;
 }): Promise<
-  | { ok: true; candidates: SdsCandidate[] }
+  | {
+      ok: true;
+      candidates: SdsCandidate[];
+      hazard: PubChemHazardData | null;
+    }
   | { ok: false; error: string }
 > {
   const session = await requireRole("ORG_ADMIN");
@@ -270,21 +286,23 @@ export async function findSdsCandidatesAction(input: {
     };
   }
 
+  const cas = input.casNumber?.trim() || undefined;
+  const manufacturer = input.manufacturer?.trim() || undefined;
+
   try {
-    const candidates = await findSdsCandidates({
-      product,
-      manufacturer: input.manufacturer?.trim() || undefined,
-      casNumber: input.casNumber?.trim() || undefined,
-    });
+    const [candidates, hazard] = await Promise.all([
+      findSdsCandidates({ product, manufacturer, casNumber: cas }),
+      lookupBest({ cas, name: product }).catch(() => null),
+    ]);
 
     await recordAction({
       organizationId: session.user.organizationId,
       userId: session.user.id,
       action: "sds.ai-search",
-      summary: `AI search for "${product}" returned ${candidates.length} candidate(s)`,
+      summary: `AI search for "${product}" returned ${candidates.length} candidate(s)${hazard ? " + PubChem hit" : ""}`,
     });
 
-    return { ok: true, candidates };
+    return { ok: true, candidates, hazard };
   } catch (err) {
     if (err instanceof AnthropicConfigError) {
       return { ok: false, error: err.message };
@@ -298,6 +316,12 @@ export async function findSdsCandidatesAction(input: {
 
 // ---------- AI: apply a candidate (fetch + create SdsSheet) -------------
 
+const hazardInputSchema = z.object({
+  signalWord: z.enum(["Danger", "Warning"]).nullable().optional(),
+  ghsPictograms: z.array(z.string()).optional(),
+  hazardStatements: z.array(z.string()).optional(),
+});
+
 const applyCandidateSchema = z.object({
   sourceUrl: z.string().url(),
   productName: z.string().trim().min(1).max(200),
@@ -305,11 +329,26 @@ const applyCandidateSchema = z.object({
   casNumber: z.string().trim().max(60).optional().nullable(),
   revisionDate: z.string().optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
+  hazard: hazardInputSchema.nullable().optional(),
 });
+
+type ApplyCandidateFallback = {
+  sourceUrl: string;
+  productName: string;
+  manufacturer: string | null;
+  casNumber: string | null;
+  revisionDate: string | null;
+  signalWord: "Danger" | "Warning" | null;
+  ghsPictograms: string[];
+  hazardStatements: string[];
+};
 
 export async function applySdsCandidateAction(
   input: z.infer<typeof applyCandidateSchema>,
-): Promise<{ ok: true; sheetId: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; sheetId: string }
+  | { ok: false; error: string; fallback?: ApplyCandidateFallback }
+> {
   const session = await requireRole("ORG_ADMIN");
   if (!session.user.organizationId) {
     return { ok: false, error: "No organization" };
@@ -321,6 +360,8 @@ export async function applySdsCandidateAction(
     return { ok: false, error: "Invalid candidate data" };
   }
 
+  const incomingHazard = parsed.data.hazard ?? null;
+
   let ingested;
   try {
     ingested = await fetchAndStorePdf({
@@ -329,7 +370,20 @@ export async function applySdsCandidateAction(
     });
   } catch (err) {
     if (err instanceof BlobIngestError) {
-      return { ok: false, error: err.message };
+      return {
+        ok: false,
+        error: err.message,
+        fallback: {
+          sourceUrl: parsed.data.sourceUrl,
+          productName: parsed.data.productName,
+          manufacturer: parsed.data.manufacturer ?? null,
+          casNumber: parsed.data.casNumber ?? null,
+          revisionDate: parsed.data.revisionDate ?? null,
+          signalWord: incomingHazard?.signalWord ?? null,
+          ghsPictograms: incomingHazard?.ghsPictograms ?? [],
+          hazardStatements: incomingHazard?.hazardStatements ?? [],
+        },
+      };
     }
     return {
       ok: false,
@@ -337,10 +391,11 @@ export async function applySdsCandidateAction(
     };
   }
 
-  // Best-effort AI extraction; if it fails the upload still succeeds.
-  let aiSignalWord: string | null = null;
-  let aiGhs: string[] = [];
-  let aiHazards: string[] = [];
+  // Seed with PubChem-derived hazard data (from the Find SDS modal); Haiku
+  // overwrites whatever it can read from the actual PDF.
+  let aiSignalWord: string | null = incomingHazard?.signalWord ?? null;
+  let aiGhs: string[] = incomingHazard?.ghsPictograms ?? [];
+  let aiHazards: string[] = incomingHazard?.hazardStatements ?? [];
   let revisionDateIso = parsed.data.revisionDate ?? null;
   if (isAnthropicConfigured()) {
     try {
@@ -350,8 +405,8 @@ export async function applySdsCandidateAction(
       if (meta.signalWord === "Danger" || meta.signalWord === "Warning") {
         aiSignalWord = meta.signalWord;
       }
-      if (meta.ghsPictograms) aiGhs = meta.ghsPictograms;
-      if (meta.hazardStatements) aiHazards = meta.hazardStatements;
+      if (meta.ghsPictograms?.length) aiGhs = meta.ghsPictograms;
+      if (meta.hazardStatements?.length) aiHazards = meta.hazardStatements;
       if (!revisionDateIso && meta.revisionDate) {
         if (/^\d{4}-\d{2}-\d{2}$/.test(meta.revisionDate)) {
           revisionDateIso = meta.revisionDate;
