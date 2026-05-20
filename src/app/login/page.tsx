@@ -67,7 +67,17 @@ export default async function LoginPage({
           <input type="hidden" name="callbackUrl" value={params.callbackUrl ?? "/"} />
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required autoComplete="email" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
+            />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>

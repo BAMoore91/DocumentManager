@@ -10,7 +10,11 @@ import { getOrgSeatUsage } from "@/lib/seats";
 import type { Role } from "@prisma/client";
 
 const newUserSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email(),
   name: z.string().min(1).max(100),
   password: z.string().min(8).max(72),
   role: z.enum(["SUPER_ADMIN", "ORG_ADMIN", "USER"]),

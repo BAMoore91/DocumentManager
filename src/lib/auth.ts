@@ -8,7 +8,11 @@ import { recordAction } from "@/lib/audit-log";
 import type { Role } from "@prisma/client";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email(),
   password: z.string().min(1),
 });
 

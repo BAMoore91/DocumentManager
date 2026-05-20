@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:normalize-emails": "tsx scripts/normalize-emails.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
